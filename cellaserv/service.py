@@ -864,7 +864,9 @@ class Service(AsynClient, metaclass=ServiceMeta):
         # Start threads
         for method in self._threads:
             method_bound = method.__get__(self, type(self))
-            threading.Thread(target=method_bound, daemon=True).start()
+            t = threading.Thread(target=method_bound)
+            t.daemon = True
+            t.start()
 
     def run(self):
         """
