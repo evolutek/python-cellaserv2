@@ -8,7 +8,7 @@ import unittest
 
 import cellaserv_client
 import local_settings
-import example.date_service
+import example.date_service as date_service
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
 
