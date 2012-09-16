@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# example featuring cellaserv usage
+"""Using the cellaserv_client module to implement a service answering to the
+"epoch" command.
+"""
 
 import sys
 sys.path.append("..")
 import cellaserv_client
 
 import time
-
-
 
 class DateService(cellaserv_client.Client):
 

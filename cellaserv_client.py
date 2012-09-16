@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
-# Test script for cellaserv and the cellaserv_client protocol
+"""Python client for cellaserv and the Evo13 protocol
 
-# require
-#   running : cellaserv
+require:
+ - a running cellaserv instance to connect to
+
+Sample usage is provided in the example folder.
+"""
+
+__version__ = "0.1"
 
 import asynchat
 import json
 
 class Client(asynchat.async_chat):
-    """Basic implementation of the Evo13 protocol"""
+    """Python implementation of the Evo13 protocol"""
 
     def __init__(self, sock):
         super(Client, self).__init__(sock=sock)
