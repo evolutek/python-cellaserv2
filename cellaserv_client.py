@@ -79,23 +79,3 @@ class Client(asynchat.async_chat):
 
     def message_sent(self, message):
         print(">> " + str(message))
-
-def main():
-    import asyncore
-    import socket
-
-    import local_settings
-
-    HOST, PORT = local_settings.HOST, local_settings.PORT
-
-    with socket.create_connection((HOST, PORT)) as sock:
-        client = Client(sock)
-        #client.register_service("test")
-        #client.notify({'hello': 'world'}, "test")
-        for i in range(1000):
-            client.query('epoch', 'date')
-
-        asyncore.loop()
-
-if __name__ == "__main__":
-    main()
