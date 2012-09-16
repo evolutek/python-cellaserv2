@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""Unit tests for cellaserv using the cellaserv_client library
+"""
+
 import asyncore
 import json
 import multiprocessing
