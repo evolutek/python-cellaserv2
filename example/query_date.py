@@ -17,7 +17,7 @@ def main():
         client = cellaserv_client.Client(sock)
         #client.register_service("test")
         #client.notify({'hello': 'world'}, "test")
-        for i in range(1000):
+        for i in range(10):
             client.query('epoch', 'date') # request cammand `epoch` to
                                           # date_service
 
