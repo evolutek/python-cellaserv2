@@ -9,7 +9,7 @@ import socket
 import time
 import unittest
 
-import cellaserv_client
+import cellaserv
 import local_settings
 import example.date_service as date_service
 
@@ -182,6 +182,15 @@ class TestClientService(TestCellaserv):
             self.assertIn("ack-data", resp)
 
         date_serv.terminate()
+
+class TestNotify(TestCellaserv):
+
+    def test_notify_no_emitter(self):
+        client = cellaserv.Client(self.socket)
+        client.notify("test")
+        client.notify("test", [1, 2, "a"])
+
+        client.server_status()
 
 if __name__ == "__main__":
     unittest.main()

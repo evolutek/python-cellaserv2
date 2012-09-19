@@ -5,11 +5,11 @@
 
 import sys
 sys.path.append("..")
-import cellaserv_client
+import cellaserv
 
 import time
 
-class DateService(cellaserv_client.Client):
+class DateService(cellaserv.Client):
 
     def __init__(self, sock, identification=None):
         super(DateService, self).__init__(sock)
@@ -19,7 +19,7 @@ class DateService(cellaserv_client.Client):
         self.register_service('date', self.identification)
 
     def message_recieved(self, message):
-        cellaserv_client.Client.message_recieved(self, message) # debug message
+        super().message_recieved(message)
 
         if message['command'] == 'query' and message['action'] == 'epoch':
             response = {}
