@@ -9,7 +9,7 @@ import cellaserv
 
 import time
 
-class DateService(cellaserv.Client):
+class DateService(cellaserv.AsynClient):
 
     def __init__(self, sock, identification=None):
         super(DateService, self).__init__(sock)
