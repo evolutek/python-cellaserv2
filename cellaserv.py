@@ -15,6 +15,8 @@ import asynchat
 import json
 import copy
 
+from collections import defaultdict
+
 class AbstractClient:
     """Python implementation of the Evo13 protocol"""
 
@@ -66,7 +68,7 @@ class AbstractClient:
 
         return self.send_message(message, *args, **kwargs)
 
-    def listen(self, notification, *args, **kwargs):
+    def listen_notification(self, notification, *args, **kwargs):
         """Send a listen command to register to a notification"""
         message = {}
         message['command'] = 'listen'
@@ -101,7 +103,7 @@ class SynClient(AbstractClient):
         while not resp:
             resp = self._buffer.readline()
 
-        return resp
+        return json.loads(resp)
 
 class AsynClient(asynchat.async_chat, AbstractClient):
     """Async. client"""
@@ -112,7 +114,9 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
         self._ibuffer = []
         self.set_terminator(b'\n')
+
         self._ack_cb = None
+        self._notify_cb = defaultdict(list)
 
     def set_ack_cb(self, f):
         self._ack_cb = f
@@ -120,6 +124,10 @@ class AsynClient(asynchat.async_chat, AbstractClient):
     def collect_incoming_data(self, data):
         """Buffer the data"""
         self._ibuffer.append(data)
+
+    def connect_notify(self, notify, notify_cb):
+        """On notify 'notify' recieve, call `notify_cb`"""
+        self._notify_cb[notify_cb].append(notify_cb)
 
     def found_terminator(self):
         """Process incoming message"""
@@ -133,6 +141,9 @@ class AsynClient(asynchat.async_chat, AbstractClient):
     def message_recieved(self, message):
         if 'ack' in message and self._ack_cb:
             self._ack_cb(message)
+        elif 'command' in message and message['command'] == 'notify':
+            for cb in self._notify_cb['notify']:
+                cb(message)
 
         return message
 

@@ -185,8 +185,22 @@ class TestClientService(TestCellaserv):
 
 class TestNotify(TestCellaserv):
 
+    def test_notify(self):
+        client0 = cellaserv.SynClient(self.socket)
+        client0.register_service("notify-test")
+
+        client1 = cellaserv.SynClient(self.new_socket())
+        client1.listen_notification('foobar')
+
+        client0.notify('foobar', 'test')
+
+        notify = client1.read_message()
+
+        self.assertEqual({ "command" : "notify", "notify" : "foobar",
+            "notify-data" : "test" }, notify)
+
     def test_notify_no_emitter(self):
-        client = cellaserv.Client(self.socket)
+        client = cellaserv.SynClient(self.socket)
         client.notify("test")
         client.notify("test", [1, 2, "a"])
 
