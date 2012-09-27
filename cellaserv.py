@@ -127,7 +127,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def connect_notify(self, notify, notify_cb):
         """On notify 'notify' recieve, call `notify_cb`"""
-        self._notify_cb[notify_cb].append(notify_cb)
+        self._notify_cb[notify].append(notify_cb)
 
     def found_terminator(self):
         """Process incoming message"""
@@ -142,12 +142,12 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         if 'ack' in message and self._ack_cb:
             self._ack_cb(message)
         elif 'command' in message and message['command'] == 'notify':
-            for cb in self._notify_cb['notify']:
+            for cb in self._notify_cb[message['notify']]:
                 cb(message)
 
         return message
 
-    def _send_message(self, message):
+    def _send_message(self, message, *args, **kwargs):
         """Serialize and send a message (python dict) to the server"""
         json_message = json.dumps(message).encode('ascii')
         self.push(json_message + b'\n')
