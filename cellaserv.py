@@ -42,7 +42,8 @@ class AbstractClient:
 
         return self.send_message(message, *args, **kwargs)
 
-    def query(self, action, to_service=None, to_identification=None, *args, **kwargs):
+    def query(self, action, to_service=None, to_identification=None, data=None,
+            *args, **kwargs):
         """Send a query command"""
         message = {}
         message['command'] = 'query'
@@ -50,6 +51,8 @@ class AbstractClient:
             message['service'] = to_service
         if to_identification:
             message['identification'] = to_identification
+        if data:
+            message.update(data)
         message['action'] = action
 
         if DEBUG:
