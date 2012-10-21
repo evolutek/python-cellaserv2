@@ -3,17 +3,9 @@
 cellaserv
 """
 
-import asyncore
-import socket
 import time
 
-import sys
-sys.path.append("..")
 import cellaserv.client
-
-import local_settings
-
-HOST, PORT = local_settings.HOST, local_settings.PORT
 
 class AsynDateQueryClient(cellaserv.client.AsynClientDebug):
     def __init__(self, sock):
@@ -29,6 +21,13 @@ class SyncDateQueryClient(cellaserv.client.SynClientDebug):
         super().__init__(sock=sock)
 
 def main():
+    import asyncore
+    import socket
+
+    import local_settings
+
+    HOST, PORT = local_settings.HOST, local_settings.PORT
+
     with socket.create_connection((HOST, PORT)) as sock:
         client = SyncDateQueryClient(sock)
         for i in range(10):

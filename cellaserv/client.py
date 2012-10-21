@@ -7,7 +7,7 @@ require:
 Sample usage is provided in the example folder.
 """
 
-__version__ = "0.2"
+__version__ = "0.3"
 
 DEBUG = True
 
@@ -25,12 +25,19 @@ class AbstractClient:
             self._n = 0 # debug
 
     def send_message(self, message, *args, **kwargs):
-        self.message_sent(message)
+        self._message_sent(message)
 
         return self._send_message(message, *args, **kwargs)
 
     def _send_message(self, *args, **kwargs):
         raise NotImplementedError
+
+    def _message_sent(self, message):
+        """Client may define this method, for debugging purposes for example"""
+        self.message_sent(message)
+
+    def message_sent(self, message):
+        pass
 
     def register_service(self, name, identification=None, *args, **kwargs):
         """Send a register command"""
@@ -85,7 +92,10 @@ class AbstractClient:
 
         return self.send_message(message, *args, **kwargs)
 
-    def message_sent(self, message):
+    def _message_recieved(self, message):
+        self.message_recieved(message)
+
+    def message_recieved(self, message):
         pass
 
 class SynClient(AbstractClient):
@@ -106,7 +116,11 @@ class SynClient(AbstractClient):
         while not resp:
             resp = self._buffer.readline()
 
-        return json.loads(resp)
+        message = json.loads(resp)
+
+        self._message_recieved(message)
+
+        return message
 
 class AsynClient(asynchat.async_chat, AbstractClient):
     """Async. client"""
@@ -139,37 +153,47 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         json_message = byte_data.decode('ascii')
         message = json.loads(json_message)
 
-        self.message_recieved(message)
+        self._message_recieved(message)
 
     def message_recieved(self, message):
+        """Called on incoming message from cellaserv"""
         if 'ack' in message and self._ack_cb:
             self._ack_cb(message)
-        elif 'command' in message and message['command'] == 'notify':
-            for cb in self._notify_cb[message['notify']]:
-                cb(message)
+        elif 'command' in message:
+            if message['command'] == 'query':
+                self.query_recieved(message)
+            elif message['command'] == 'notify':
+                for cb in self._notify_cb[message['notify']]:
+                    cb(message)
 
-        return message
+    def query_recieved(self, query):
+        pass
 
     def _send_message(self, message, *args, **kwargs):
         """Serialize and send a message (python dict) to the server"""
         json_message = json.dumps(message).encode('ascii')
         self.push(json_message + b'\n')
 
-class SynClientDebug(SynClient):
-    def message_recieved(self, message):
-        print("<< " + str(message))
-        return super().message_recieved(message)
 
-    def message_sent(self, message):
+class SynClientDebug(SynClient):
+    def _message_recieved(self, message):
+        print("<< " + str(message))
+
+        super()._message_recieved(message)
+
+    def _message_sent(self, message):
         print(">> " + str(message))
-        return super().message_sent(message)
+
+        super()._message_sent(message)
 
 
 class AsynClientDebug(AsynClient):
-    def message_recieved(self, message):
+    def _message_recieved(self, message):
         print("<< " + str(message))
-        return super().message_recieved(message)
 
-    def message_sent(self, message):
+        super()._message_recieved(message)
+
+    def _message_sent(self, message):
         print(">> " + str(message))
-        return super().message_sent(message)
+
+        super()._message_sent(message)

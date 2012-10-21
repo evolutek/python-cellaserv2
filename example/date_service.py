@@ -2,25 +2,21 @@
 """Using the cellaserv module to implement a service answering to the
 "epoch" command.
 """
-
-import sys
-sys.path.append("..")
-import cellaserv.client
-
 import time
+
+import cellaserv.client
 
 class DateService(cellaserv.client.AsynClient):
 
     def __init__(self, sock, identification=None):
-        super(DateService, self).__init__(sock)
+        super().__init__(sock)
+
         self.identification = identification
 
     def connect(self):
         self.register_service('date', self.identification)
 
     def message_recieved(self, message):
-        super().message_recieved(message)
-
         if message['command'] == 'query' and message['action'] == 'epoch':
             response = {}
             response['command'] = 'ack'

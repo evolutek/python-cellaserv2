@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Use the cellaserv module to send notify every second"""
 
-import sys
 import time
 
-sys.path.append("..")
 import cellaserv.client
 
 class DateNotifier(cellaserv.client.SynClientDebug):

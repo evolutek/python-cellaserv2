@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # testing cellasserv(server) timeout
 
-import sys
-sys.path.append("..")
 import cellaserv.client
 
 import time

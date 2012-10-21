@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import time
 
-import sys
-sys.path.insert(0, '..')
-import cellaserv
+import cellaserv.client
 
-class EpochDelta(cellaserv.AsynClientDebug):
+class EpochDelta(cellaserv.client.AsynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
         self.listen_notification('epoch')
