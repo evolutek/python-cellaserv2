@@ -9,13 +9,13 @@ import time
 
 import sys
 sys.path.append("..")
-import cellaserv
+import cellaserv.client
 
 import local_settings
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
 
-class AsynDateQueryClient(cellaserv.AsynClientDebug):
+class AsynDateQueryClient(cellaserv.client.AsynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
@@ -24,7 +24,7 @@ class AsynDateQueryClient(cellaserv.AsynClientDebug):
     def print_time(self, message):
         print("Time: {}".format(time.ctime(message['ack-data']['epoch'])))
 
-class SyncDateQueryClient(cellaserv.SynClientDebug):
+class SyncDateQueryClient(cellaserv.client.SynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 

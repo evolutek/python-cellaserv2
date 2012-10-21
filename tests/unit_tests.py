@@ -6,10 +6,11 @@ import asyncore
 import json
 import multiprocessing
 import socket
+import sys
 import time
 import unittest
 
-import cellaserv
+import cellaserv.client
 import local_settings
 import example.date_service as date_service
 
@@ -186,10 +187,10 @@ class TestClientService(TestCellaserv):
 class TestNotify(TestCellaserv):
 
     def test_notify(self):
-        client0 = cellaserv.SynClient(self.socket)
+        client0 = cellaserv.client.SynClient(self.socket)
         client0.register_service("notify-test")
 
-        client1 = cellaserv.SynClient(self.new_socket())
+        client1 = cellaserv.client.SynClient(self.new_socket())
         client1.listen_notification('foobar')
 
         client0.notify('foobar', 'test')
@@ -200,11 +201,14 @@ class TestNotify(TestCellaserv):
             "notify-data" : "test" }, notify)
 
     def test_notify_no_emitter(self):
-        client = cellaserv.SynClient(self.socket)
+        client = cellaserv.client.SynClient(self.socket)
         client.notify("test")
         client.notify("test", [1, 2, "a"])
 
         client.server_status()
 
-if __name__ == "__main__":
-    unittest.main()
+try:
+    sock = socket.create_connection((HOST, PORT))
+except socket.error:
+    print("Cound not connect to cellaserv", file=sys.stderr)
+    sys.exit(1)

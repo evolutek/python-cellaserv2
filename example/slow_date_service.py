@@ -3,19 +3,16 @@
 
 import sys
 sys.path.append("..")
-import cellaserv_client
+import cellaserv.client
 
 import time
 
-class DateService(cellaserv_client.Client):
-
+class DateService(cellaserv.client.AsynClient):
     def __init__(self, sock):
-        cellaserv_client.Client.__init__(self, sock)
+        super().__init__(sock)
         self.register_service('date')
 
     def message_recieved(self, message):
-        cellaserv_client.Client.message_recieved(self, message)
-
         time.sleep(3) # timeout test
 
         if message['command'] == 'query' and message['action'] == 'epoch':

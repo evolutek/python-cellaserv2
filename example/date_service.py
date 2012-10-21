@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Using the cellaserv_client module to implement a service answering to the
+"""Using the cellaserv module to implement a service answering to the
 "epoch" command.
 """
 
 import sys
 sys.path.append("..")
-import cellaserv
+import cellaserv.client
 
 import time
 
-class DateService(cellaserv.AsynClient):
+class DateService(cellaserv.client.AsynClient):
 
     def __init__(self, sock, identification=None):
         super(DateService, self).__init__(sock)
