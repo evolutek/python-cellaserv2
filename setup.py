@@ -8,5 +8,5 @@ setup(
     author='Evolutek',
     author_email='mail@halfr.net',
     packages = ['cellaserv'],
-    test_suite = 'tests',
+    test_suite = 'tests.unit_tests',
 )

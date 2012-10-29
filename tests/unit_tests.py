@@ -11,7 +11,7 @@ import time
 import unittest
 
 import cellaserv.client
-import local_settings
+from tests import local_settings
 import example.date_service as date_service
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
