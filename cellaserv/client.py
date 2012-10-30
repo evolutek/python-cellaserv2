@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Python client for cellaserv and the Evo13 protocol
+"""
+Python clients for cellaserv.
 
 require:
  - a running cellaserv instance to connect to
 
-Sample usage is provided in the example folder.
+Sample usage is provided in the ``example/`` folder.
 """
 
 __version__ = "0.4"
@@ -102,7 +103,7 @@ class AbstractClient:
         pass
 
 class SynClient(AbstractClient):
-    """Sync. client"""
+    """Synchronous cellaserv client."""
 
     def __init__(self, sock):
         super().__init__(sock=sock)
@@ -146,7 +147,7 @@ class SynClient(AbstractClient):
             return self._read_single_message()
 
 class AsynClient(asynchat.async_chat, AbstractClient):
-    """Async. client"""
+    """Asynchronous cellaserv client."""
 
     def __init__(self, sock):
         super().__init__(sock=sock)
@@ -166,7 +167,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         self._ibuffer.append(data)
 
     def connect_notify(self, notify, notify_cb):
-        """On notify 'notify' recieve, call `notify_cb`"""
+        """On notify 'notify' recieved, call `notify_cb`"""
         self._notify_cb[notify].append(notify_cb)
 
     def found_terminator(self):
@@ -199,6 +200,10 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
 
 class SynClientDebug(SynClient):
+    """Synchronous debug client.
+
+    Prints mesages sent/recieved"""
+
     def _message_recieved(self, message):
         print("<< " + str(message))
 
@@ -211,6 +216,10 @@ class SynClientDebug(SynClient):
 
 
 class AsynClientDebug(AsynClient):
+    """Asynchronous debug client.
+
+    Prints mesages sent/recieved."""
+
     def _message_recieved(self, message):
         print("<< " + str(message))
 
