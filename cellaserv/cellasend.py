@@ -62,7 +62,8 @@ def main():
         message = args.json_dict
 
         # tweak the message if necessary
-        if 'command' in message and message['command'] == 'query' \
+        if 'command' in message \
+                and message['command'] in ('query', 'register') \
                 and 'id' not in message:
             message['id'] = str(uuid.uuid4())
 
