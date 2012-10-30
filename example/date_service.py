@@ -16,11 +16,11 @@ class DateService(cellaserv.client.AsynClient):
     def connect(self):
         self.register_service('date', self.identification)
 
-    def message_recieved(self, message):
-        if message['command'] == 'query' and message['action'] == 'epoch':
+    def query_recieved(self, message):
+        if message['action'] == 'epoch':
             response = {}
             response['command'] = 'ack'
-            response['ack'] = message
+            response['id'] = message['id']
             response['ack-data'] = {'epoch': int(time.time())}
 
             self.send_message(response)

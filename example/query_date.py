@@ -16,7 +16,7 @@ class AsynDateQueryClient(cellaserv.client.AsynClientDebug):
     def print_time(self, message):
         print("Time: {}".format(time.ctime(message['ack-data']['epoch'])))
 
-class SyncDateQueryClient(cellaserv.client.SynClientDebug):
+class SynDateQueryClient(cellaserv.client.SynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
@@ -29,7 +29,7 @@ def main():
     HOST, PORT = local_settings.HOST, local_settings.PORT
 
     with socket.create_connection((HOST, PORT)) as sock:
-        client = SyncDateQueryClient(sock)
+        client = SynDateQueryClient(sock)
         for i in range(10):
             client.query('epoch', 'date')
             print(client.read_message())

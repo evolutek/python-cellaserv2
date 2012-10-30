@@ -7,13 +7,11 @@ require:
 Sample usage is provided in the example folder.
 """
 
-__version__ = "0.3"
-
-DEBUG = True
+__version__ = "0.4"
 
 import asynchat
 import json
-import copy
+import uuid
 
 from collections import defaultdict
 
@@ -21,8 +19,7 @@ class AbstractClient:
     """Python implementation of the Evo13 protocol"""
 
     def __init__(self, sock, *args, **kwargs):
-        if DEBUG:
-            self._n = 0 # debug
+        pass
 
     def send_message(self, message, *args, **kwargs):
         self._message_sent(message)
@@ -46,12 +43,19 @@ class AbstractClient:
         message['service'] = name
         if identification:
             message['identification'] = identification
+        message['id'] = str(uuid.uuid4())
 
         return self.send_message(message, *args, **kwargs)
 
     def query(self, action, to_service=None, to_identification=None, data=None,
             *args, **kwargs):
-        """Send a query command"""
+        """Send a query command.
+
+            Action comes first because every other argument is optional, eg.
+            you can broadcast a ping with ``client.query('ping')``."""
+
+        message_id = uuid.uuid4()
+
         message = {}
         message['command'] = 'query'
         if to_service:
@@ -61,12 +65,11 @@ class AbstractClient:
         if data:
             message.update(data)
         message['action'] = action
+        message['id'] = str(message_id)
 
-        if DEBUG:
-            message['id'] = self._n
-            self._n += 1
+        self.send_message(message, *args, **kwargs)
 
-        return self.send_message(message, *args, **kwargs)
+        return message_id
 
     def notify(self, notification, message_content=None, *args, **kwargs):
         """Send a notify command"""
@@ -106,12 +109,18 @@ class SynClient(AbstractClient):
 
         self._socket = sock
         self._buffer = sock.makefile()
+        self._messages_waiting = {}
 
     def _send_message(self, message, *args, **kwargs):
         data = json.dumps(message).encode('ascii')
         self._socket.send(data + b'\n')
 
-    def read_message(self):
+    def query(self, *args, **kwargs):
+        message_id = super().query(*args, **kwargs)
+
+        return self.read_message(message_id)
+
+    def _read_single_message(self):
         resp = ""
         while not resp:
             resp = self._buffer.readline()
@@ -121,6 +130,20 @@ class SynClient(AbstractClient):
         self._message_recieved(message)
 
         return message
+
+    def read_message(self, message_id=None):
+        if message_id:
+            while message_id not in self._messages_waiting:
+                new_message = self._read_single_message()
+                self._messages_waiting[uuid.UUID(new_message['id'])] = \
+                        new_message
+
+            message = self._messages_waiting[message_id]
+            del self._messages_waiting[message_id]
+            return message
+
+        else:
+            return self._read_single_message()
 
 class AsynClient(asynchat.async_chat, AbstractClient):
     """Async. client"""

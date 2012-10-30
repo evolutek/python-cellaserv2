@@ -9,10 +9,13 @@ import socket
 import sys
 import time
 import unittest
+import uuid
 
 import cellaserv.client
 from tests import local_settings
 import example.date_service as date_service
+
+__version__ = '0.2'
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
 
@@ -57,14 +60,20 @@ class TestCellaserv(unittest.TestCase):
 
         self.assertIn("command", resp_dict)
         self.assertEqual(resp_dict["command"], "ack")
-        self.assertIn("ack", resp_dict)
-        self.assertEqual(resp_dict["ack"], command)
+        self.assertIn("id", resp_dict)
+        self.assertEqual(resp_dict["id"], command["id"])
 
         return resp_dict
 
+class VersionTest(TestCellaserv):
+
+    def test_version(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        client.server_status()
+        resp = client.read_message()
+        self.assertEqual(resp['version'], __version__)
+
 class BasicTests(TestCellaserv):
-    # Todo:
-    # test ill formed query (ints, lists, & other things)
 
     def test_complete_gibberish(self):
         self.socket.send(b'\n\n{"foo"} 314231234\n{""}\n{"aaa": "foo"}\n')
@@ -96,6 +105,7 @@ class BasicTests(TestCellaserv):
                 {"foo": {"hello": "bite"}},
                 ["hello", "test"],
         ]
+
         for command in commands:
             self.send_command(command)
             resp = self.readline()
@@ -104,18 +114,21 @@ class BasicTests(TestCellaserv):
 
     def test_command_register_service(self):
         command = {"command": "register",
-                   "service": "test"}
+                   "service": "test",
+                   "id": str(uuid.uuid4())}
         self.check_ack(command)
 
     def test_command_register_service_fuzz(self):
         command = {"command": "register",
-                   "service": "A"*2**16}
+                   "service": "A"*2**16,
+                   "id": str(uuid.uuid4())}
         self.check_ack(command)
 
     def test_command_register_service_with_ident(self):
         command = {"command": "register",
                    "service": "test",
-                   "identification": "foobarlol"}
+                   "identification": "foobarlol",
+                   "id": str(uuid.uuid4())}
         self.check_ack(command)
 
     def test_register_many_services(self):
@@ -124,12 +137,13 @@ class BasicTests(TestCellaserv):
 
         for i in range(1000):
             command["identification"] = str(i)
+            command['id'] = str(uuid.uuid4())
 
             sock = self.new_socket()
             sock.send(json.dumps(command).encode("ascii") + b'\n')
 
         import time
-        time.sleep(0.06) # time to process connections (qt is async)
+        time.sleep(0.1) # time to process connections (qt is async)
 
         command = {}
         command["command"] = "status"
@@ -150,37 +164,25 @@ class TestClientService(TestCellaserv):
     def test_query(self):
         date_serv = multiprocessing.Process(target=start_date_service)
         date_serv.start()
-
         import time
-        time.sleep(0.3) # time for child process to start
+        time.sleep(0.5) # time for child process to start
 
-        command = {"command": "query",
-                   "service": "date",
-                   "action": "epoch"}
-        self.send_command(command)
-        resp = self.check_ack(command)
+        client = cellaserv.client.SynClient(self.new_socket())
 
-        self.assertIn("ack-data", resp)
+        client.query("epoch", "date")
 
         date_serv.terminate()
 
     def test_many_query(self):
         date_serv = multiprocessing.Process(target=start_date_service)
         date_serv.start()
-
         import time
         time.sleep(0.5) # time for child process to start
 
-        command = {"command": "query",
-                   "service": "date",
-                   "action": "epoch"}
+        client = cellaserv.client.SynClient(self.new_socket())
 
         for i in range(100):
-            self.send_command(command)
-
-        for i in range(100):
-            resp = self.check_ack(command)
-            self.assertIn("ack-data", resp)
+            client.query("epoch", "date")
 
         date_serv.terminate()
 
@@ -189,6 +191,9 @@ class TestNotify(TestCellaserv):
     def test_notify(self):
         client0 = cellaserv.client.SynClient(self.socket)
         client0.register_service("notify-test")
+
+        import time
+        time.sleep(0.4)
 
         client1 = cellaserv.client.SynClient(self.new_socket())
         client1.listen_notification('foobar')
@@ -206,6 +211,9 @@ class TestNotify(TestCellaserv):
         client.notify("test", [1, 2, "a"])
 
         client.server_status()
+
+if __name__ == "__main__":
+    unittest.main()
 
 try:
     sock = socket.create_connection((HOST, PORT))
