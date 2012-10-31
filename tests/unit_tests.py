@@ -15,8 +15,6 @@ import cellaserv.client
 from tests import local_settings
 import example.date_service as date_service
 
-__version__ = '0.2'
-
 HOST, PORT = local_settings.HOST, local_settings.PORT
 
 class TestCellaserv(unittest.TestCase):
@@ -71,7 +69,7 @@ class VersionTest(TestCellaserv):
         client = cellaserv.client.SynClient(self.new_socket())
         client.server_status()
         resp = client.read_message()
-        self.assertEqual(resp['version'], __version__)
+        self.assertEqual(resp['protocol-version'], client._PROTOCOL_VERSION)
 
 class BasicTests(TestCellaserv):
 
@@ -95,7 +93,7 @@ class BasicTests(TestCellaserv):
         self.socket.send(b'\n')
 
         resp = self.readline()
-        self.assertIn("service_count", resp)
+        self.assertIn("service-count", resp)
 
     def test_command_unknwon(self):
         commands = [
@@ -150,7 +148,7 @@ class BasicTests(TestCellaserv):
 
         self.send_command(command)
         resp = self.readline()
-        self.assertEqual(json.loads(resp)["service_count"], 1000)
+        self.assertEqual(json.loads(resp)["service-count"], 1000)
 
 def start_date_service(ident="test"):
     with socket.create_connection((HOST, PORT)) as sock:
@@ -196,7 +194,7 @@ class TestNotify(TestCellaserv):
         time.sleep(0.4)
 
         client1 = cellaserv.client.SynClient(self.new_socket())
-        client1.listen_notification('foobar')
+        client1.subscribe_event('foobar')
 
         client0.notify('foobar', 'test')
 

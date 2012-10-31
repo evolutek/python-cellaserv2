@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-Python clients for cellaserv.
+Python base class for writing clients for cellaserv.
 
-require:
- - a running cellaserv instance to connect to
-
-Sample usage is provided in the ``example/`` folder.
+Sample usage is provided in the ``example/`` folder of the source distribution.
 """
 
-__version__ = "0.4"
+__version__ = "0.5"
+__protocol_version__ = "0.5"
 
 import asynchat
 import json
@@ -17,7 +15,9 @@ import uuid
 from collections import defaultdict
 
 class AbstractClient:
-    """Python implementation of the Evo13 protocol"""
+    """Abstract client"""
+
+    _PROTOCOL_VERSION = __protocol_version__
 
     def __init__(self, sock, *args, **kwargs):
         pass
@@ -48,12 +48,12 @@ class AbstractClient:
 
         return self.send_message(message, *args, **kwargs)
 
-    def query(self, action, to_service=None, to_identification=None, data=None,
-            *args, **kwargs):
-        """Send a query command.
+    def query(self, action, to_service=None, to_identification=None,
+            data=None, *args, **kwargs):
+        """Send a ``query`` command.
 
-            Action comes first because every other argument is optional, eg.
-            you can broadcast a ping with ``client.query('ping')``."""
+        Action comes first because every other argument is optional, eg.
+        you can broadcast a ping with ``client.query('ping')``."""
 
         message_id = uuid.uuid4()
 
@@ -64,7 +64,7 @@ class AbstractClient:
         if to_identification:
             message['identification'] = to_identification
         if data:
-            message.update(data)
+            message['data'] = data
         message['action'] = action
         message['id'] = str(message_id)
 
@@ -72,21 +72,22 @@ class AbstractClient:
 
         return message_id
 
-    def notify(self, notification, message_content=None, *args, **kwargs):
-        """Send a notify command"""
+    def notify(self, event, event_data=None, *args, **kwargs):
+        """Send a ``notify`` command"""
         message = {}
         message['command'] = 'notify'
-        message['notify'] = notification
-        if message_content:
-            message['notify-data'] = message_content
+        message['event'] = event
+        if event_data:
+            message['data'] = event_data
 
         return self.send_message(message, *args, **kwargs)
 
-    def listen_notification(self, notification, *args, **kwargs):
-        """Send a listen command to register to a notification"""
+    def subscribe_event(self, event, *args, **kwargs):
+        """Send a ``subscribe`` command to register to an event"""
         message = {}
-        message['command'] = 'listen'
-        message['listen'] = notification
+        message['command'] = 'subscribe'
+        message['event'] = event
+        message['id'] = str(uuid.uuid4())
 
         return self.send_message(message, *args, **kwargs)
 
@@ -157,7 +158,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         self.set_terminator(b'\n')
 
         self._ack_cb = None
-        self._notify_cb = defaultdict(list)
+        self._event_cb = defaultdict(list)
 
     def set_ack_cb(self, f):
         self._ack_cb = f
@@ -166,9 +167,9 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         """Buffer the data"""
         self._ibuffer.append(data)
 
-    def connect_notify(self, notify, notify_cb):
-        """On notify 'notify' recieved, call `notify_cb`"""
-        self._notify_cb[notify].append(notify_cb)
+    def connect_event(self, event, event_cb):
+        """On event ``event`` recieved, call ``event_cb``"""
+        self._event_cb[event].append(event_cb)
 
     def found_terminator(self):
         """Process incoming message"""
@@ -187,7 +188,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
             if message['command'] == 'query':
                 self.query_recieved(message)
             elif message['command'] == 'notify':
-                for cb in self._notify_cb[message['notify']]:
+                for cb in self._notify_cb[message['event ']]:
                     cb(message)
 
     def query_recieved(self, query):

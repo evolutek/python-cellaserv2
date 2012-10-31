@@ -31,8 +31,7 @@ def main():
     with socket.create_connection((HOST, PORT)) as sock:
         client = SynDateQueryClient(sock)
         for i in range(10):
-            client.query('epoch', 'date')
-            print(client.read_message())
+            print(client.query('epoch', 'date'))
 
     with socket.create_connection((HOST, PORT)) as sock:
         client = AsynDateQueryClient(sock)

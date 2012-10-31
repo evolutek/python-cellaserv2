@@ -6,11 +6,12 @@ import cellaserv.client
 class EpochDelta(cellaserv.client.AsynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
-        self.listen_notification('epoch')
-        self.connect_notify('epoch', self.on_epoch)
+
+        self.subscribe_event('epoch')
+        self.connect_event('epoch', self.on_epoch)
 
     def on_epoch(self, message):
-        epoch = float(message['notify-data'])
+        epoch = float(message['data'])
         print('{:3.3} msec'.format((time.time() - epoch) * 1000))
 
 if __name__ == "__main__":
