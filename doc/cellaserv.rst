@@ -5,8 +5,6 @@ cellaserv Package
 -----------------------
 
 .. automodule:: cellaserv.cellasend
-    :members:
-    :show-inheritance:
 
 :mod:`client` Module
 --------------------

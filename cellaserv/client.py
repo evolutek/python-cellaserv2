@@ -17,8 +17,6 @@ from collections import defaultdict
 class AbstractClient:
     """Abstract client"""
 
-    _PROTOCOL_VERSION = __protocol_version__
-
     def __init__(self, sock, *args, **kwargs):
         pass
 
@@ -31,14 +29,16 @@ class AbstractClient:
         raise NotImplementedError
 
     def _message_sent(self, message):
-        """Client may define this method, for debugging purposes for example"""
+        """Method call when a message is sent from the client.
+
+        Clients may redefine this method, for example for debugging purposes"""
         self.message_sent(message)
 
     def message_sent(self, message):
         pass
 
     def register_service(self, name, identification=None, *args, **kwargs):
-        """Send a register command"""
+        """Send a ``register`` command."""
         message = {}
         message['command'] = 'register'
         message['service'] = name
