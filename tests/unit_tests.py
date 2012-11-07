@@ -221,8 +221,12 @@ class TestNotify(TestCellaserv):
 
         notify = client1.read_message()
 
-        self.assertEqual({ "command" : "notify", "event" : "foobar",
-            "data" : "test" }, notify)
+        self.assertEqual(notify['data'], 'test')
+
+        ack = {}
+        ack['command'] = 'ack'
+        ack['id'] = notify['id']
+        client0.send_message(ack)
 
     def test_notify_no_emitter(self):
         client = cellaserv.client.SynClient(self.socket)

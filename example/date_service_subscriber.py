@@ -14,6 +14,11 @@ class EpochDelta(cellaserv.client.AsynClientDebug):
         epoch = float(message['data'])
         print('{:3.3} msec'.format((time.time() - epoch) * 1000))
 
+        ack = {}
+        ack['command'] = 'ack'
+        ack['id'] = message['id']
+        self.send_message(ack)
+
 if __name__ == "__main__":
     import asyncore
     import socket

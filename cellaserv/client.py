@@ -232,7 +232,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         """On event ``event`` recieved, call ``event_cb``"""
         self._event_cb[event].append(event_cb)
 
-    ### Callbacks
+    # Callbacks
 
     def message_recieved(self, message):
         """Called on incoming message from cellaserv"""
