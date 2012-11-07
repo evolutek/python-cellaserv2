@@ -113,6 +113,10 @@ class SynClient(AbstractClient):
         self._buffer = sock.makefile()
         self._messages_waiting = {}
 
+        resp = self.server_status()
+        if resp['protocol-version'] != __protocol_version__:
+            print("Warning: Version mismatch between client and server.")
+
     def _send_message(self, message, *args, **kwargs):
         data = json.dumps(message).encode('ascii')
         self._socket.send(data + b'\n')
