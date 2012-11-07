@@ -242,7 +242,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
             if message['command'] == 'query':
                 self.query_recieved(message)
             elif message['command'] == 'notify':
-                for cb in self._notify_cb[message['event ']]:
+                for cb in self._event_cb[message['event']]:
                     cb(message)
 
     def query_recieved(self, query):
