@@ -37,6 +37,14 @@ class AbstractClient:
     def message_sent(self, message):
         pass
 
+    def _message_recieved(self, message):
+        self.message_recieved(message)
+
+    def message_recieved(self, message):
+        pass
+
+    ### Commands
+
     def register_service(self, name, identification=None, *args, **kwargs):
         """Send a ``register`` command."""
         message = {}
@@ -46,7 +54,9 @@ class AbstractClient:
             message['identification'] = identification
         message['id'] = str(uuid.uuid4())
 
-        return self.send_message(message, *args, **kwargs)
+        self.send_message(message, *args, **kwargs)
+
+        return message['id']
 
     def query(self, action, to_service=None, to_identification=None,
             data=None, *args, **kwargs):
@@ -54,8 +64,6 @@ class AbstractClient:
 
         Action comes first because every other argument is optional, eg.
         you can broadcast a ping with ``client.query('ping')``."""
-
-        message_id = uuid.uuid4()
 
         message = {}
         message['command'] = 'query'
@@ -66,11 +74,11 @@ class AbstractClient:
         if data:
             message['data'] = data
         message['action'] = action
-        message['id'] = str(message_id)
+        message['id'] = str(uuid.uuid4())
 
         self.send_message(message, *args, **kwargs)
 
-        return message_id
+        return message['id']
 
     def notify(self, event, event_data=None, *args, **kwargs):
         """Send a ``notify`` command"""
@@ -80,31 +88,29 @@ class AbstractClient:
         if event_data:
             message['data'] = event_data
 
-        return self.send_message(message, *args, **kwargs)
+        self.send_message(message, *args, **kwargs)
 
     def subscribe_event(self, event, *args, **kwargs):
         """Send a ``subscribe`` command to register to an event"""
         message = {}
         message['command'] = 'subscribe'
         message['event'] = event
-        message['id'] = str(uuid.uuid4())
 
-        return self.send_message(message, *args, **kwargs)
+        self.send_message(message, *args, **kwargs)
 
     def server_status(self, *args, **kwargs):
         message = {}
         message['command'] = 'status'
+        message['id'] = str(uuid.uuid4())
 
-        return self.send_message(message, *args, **kwargs)
+        self.send_message(message, *args, **kwargs)
 
-    def _message_recieved(self, message):
-        self.message_recieved(message)
-
-    def message_recieved(self, message):
-        pass
+        return message['id']
 
 class SynClient(AbstractClient):
-    """Synchronous cellaserv client."""
+    """Synchronous cellaserv client.
+
+    Checks server version on __init__()."""
 
     def __init__(self, sock):
         super().__init__(sock=sock)
@@ -114,17 +120,12 @@ class SynClient(AbstractClient):
         self._messages_waiting = {}
 
         resp = self.server_status()
-        if resp['protocol-version'] != __protocol_version__:
+        if resp['data']['protocol-version'] != __protocol_version__:
             print("Warning: Version mismatch between client and server.")
 
     def _send_message(self, message, *args, **kwargs):
         data = json.dumps(message).encode('ascii')
         self._socket.send(data + b'\n')
-
-    def query(self, *args, **kwargs):
-        message_id = super().query(*args, **kwargs)
-
-        return self.read_message(message_id)
 
     def _read_single_message(self):
         resp = ""
@@ -141,67 +142,34 @@ class SynClient(AbstractClient):
         if message_id:
             while message_id not in self._messages_waiting:
                 new_message = self._read_single_message()
-                self._messages_waiting[uuid.UUID(new_message['id'])] = \
-                        new_message
+                self._messages_waiting[new_message['id']] = new_message
 
             message = self._messages_waiting[message_id]
             del self._messages_waiting[message_id]
             return message
 
+        elif self._messages_waiting:
+            return self._messages_waiting.popitem()[1]
+
         else:
             return self._read_single_message()
 
-class AsynClient(asynchat.async_chat, AbstractClient):
-    """Asynchronous cellaserv client."""
+    ### Commands
 
-    def __init__(self, sock):
-        super().__init__(sock=sock)
-        AbstractClient.__init__(self, sock=sock)
+    def register_service(self, *args, **kwargs):
+        message_id = super().register_service(*args, **kwargs)
 
-        self._ibuffer = []
-        self.set_terminator(b'\n')
+        return self.read_message(message_id)
 
-        self._ack_cb = None
-        self._event_cb = defaultdict(list)
+    def query(self, *args, **kwargs):
+        message_id = super().query(*args, **kwargs)
 
-    def set_ack_cb(self, f):
-        self._ack_cb = f
+        return self.read_message(message_id)
 
-    def collect_incoming_data(self, data):
-        """Buffer the data"""
-        self._ibuffer.append(data)
+    def server_status(self):
+        message_id = super().server_status()
 
-    def connect_event(self, event, event_cb):
-        """On event ``event`` recieved, call ``event_cb``"""
-        self._event_cb[event].append(event_cb)
-
-    def found_terminator(self):
-        """Process incoming message"""
-        byte_data = b''.join(self._ibuffer)
-        self._ibuffer = []
-        json_message = byte_data.decode('ascii')
-        message = json.loads(json_message)
-
-        self._message_recieved(message)
-
-    def message_recieved(self, message):
-        """Called on incoming message from cellaserv"""
-        if 'ack' in message and self._ack_cb:
-            self._ack_cb(message)
-        elif 'command' in message:
-            if message['command'] == 'query':
-                self.query_recieved(message)
-            elif message['command'] == 'notify':
-                for cb in self._notify_cb[message['event ']]:
-                    cb(message)
-
-    def query_recieved(self, query):
-        pass
-
-    def _send_message(self, message, *args, **kwargs):
-        """Serialize and send a message (python dict) to the server"""
-        json_message = json.dumps(message).encode('ascii')
-        self.push(json_message + b'\n')
+        return self.read_message(message_id)
 
 
 class SynClientDebug(SynClient):
@@ -218,6 +186,67 @@ class SynClientDebug(SynClient):
         print(">> " + str(message))
 
         super()._message_sent(message)
+
+
+class AsynClient(asynchat.async_chat, AbstractClient):
+    """Asynchronous cellaserv client."""
+
+    def __init__(self, sock):
+        super().__init__(sock=sock)
+        AbstractClient.__init__(self, sock=sock)
+
+        # asyncore specific
+        self._ibuffer = []
+        self.set_terminator(b'\n')
+
+        self._ack_cb = None
+        self._event_cb = defaultdict(list)
+
+    def _send_message(self, message, *args, **kwargs):
+        """Serialize and send a message (python dict) to the server"""
+        json_message = json.dumps(message).encode('ascii')
+        self.push(json_message + b'\n')
+
+    # Asyncore methods
+
+    def collect_incoming_data(self, data):
+        """Buffer the data"""
+        self._ibuffer.append(data)
+
+    def found_terminator(self):
+        """Process incoming message"""
+        byte_data = b''.join(self._ibuffer)
+        self._ibuffer = []
+        json_message = byte_data.decode('ascii')
+        message = json.loads(json_message)
+
+        self._message_recieved(message)
+
+    # Methods called by subclasses
+
+    def set_ack_cb(self, f):
+        """Method called when a ``ack`` message is recieved"""
+        self._ack_cb = f
+
+    def connect_event(self, event, event_cb):
+        """On event ``event`` recieved, call ``event_cb``"""
+        self._event_cb[event].append(event_cb)
+
+    ### Callbacks
+
+    def message_recieved(self, message):
+        """Called on incoming message from cellaserv"""
+        if 'ack' in message and self._ack_cb:
+            self._ack_cb(message)
+        elif 'command' in message:
+            if message['command'] == 'query':
+                self.query_recieved(message)
+            elif message['command'] == 'notify':
+                for cb in self._notify_cb[message['event ']]:
+                    cb(message)
+
+    def query_recieved(self, query):
+        pass
 
 
 class AsynClientDebug(AsynClient):
