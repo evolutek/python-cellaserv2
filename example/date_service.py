@@ -17,13 +17,18 @@ class DateService(cellaserv.client.AsynClient):
         self.register_service('date', self.identification)
 
     def query_recieved(self, message):
-        if message['action'] == 'epoch':
-            response = {}
-            response['command'] = 'ack'
-            response['id'] = message['id']
-            response['ack-data'] = {'epoch': int(time.time())}
+        response = {}
+        response['command'] = 'ack'
+        response['id'] = message['id']
 
-            self.send_message(response)
+        if message['action'] == 'epoch':
+            response['data'] = {'epoch': int(time.time())}
+
+        else:
+            response['data'] = {'error':
+                    "unknown action: '{}'".format(message['action'])}
+
+        self.send_message(response)
 
 def main():
     import asyncore
