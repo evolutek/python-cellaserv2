@@ -13,7 +13,9 @@ import uuid
 
 import cellaserv.client
 from tests import local_settings
-import example.date_service as date_service
+
+from example import date_service
+from example import date_service_notify
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
 
@@ -232,6 +234,26 @@ class TestNotify(TestCellaserv):
         client = cellaserv.client.SynClient(self.socket)
         client.notify("test")
         client.notify("test", [1, 2, "a"])
+
+def start_date_notifier():
+    with socket.create_connection((HOST, PORT)) as sock:
+        service = date_service_notify.DateNotifier(sock)
+        service.run()
+
+class TestClientNotify(TestCellaserv):
+
+    def test_notify(self):
+        date_serv = multiprocessing.Process(target=start_date_notifier)
+        date_serv.start()
+
+        client = cellaserv.client.SynClient(self.socket)
+        client.subscribe_event('epoch')
+
+        notify = client.read_message()
+
+        self.assertEqual(notify['command'], 'notify')
+
+        date_serv.terminate()
 
 if __name__ == "__main__":
     unittest.main()
