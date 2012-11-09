@@ -73,7 +73,7 @@ class VersionTest(TestCellaserv):
 
     def test_version(self):
         client = cellaserv.client.SynClient(self.new_socket())
-        resp = client.server_status()
+        resp = client.server('status')
         self.assertEqual(resp['data']['protocol-version'],
                 cellaserv.client.__protocol_version__)
 
@@ -94,7 +94,7 @@ class BasicTests(TestCellaserv):
     def test_partial_packet(self):
         self.socket.send(b'{"command"')
         time.sleep(0)
-        self.socket.send(b': "status"}')
+        self.socket.send(b': "server", "action": "status", "id": "42"}')
         time.sleep(0)
         self.socket.send(b'\n')
 
@@ -148,12 +148,10 @@ class BasicTests(TestCellaserv):
 
         time.sleep(0.1) # time to process connections (qt is async)
 
-        command = {}
-        command["command"] = "status"
+        client = cellaserv.client.SynClient(self.socket)
+        status = client.server('status')
 
-        self.send_command(command)
-        resp = self.readline()
-        self.assertEqual(json.loads(resp)['data']["service-count"], 100)
+        self.assertEqual(status['data']["service-count"], 100)
 
 def start_date_service(ident="test"):
     with socket.create_connection((HOST, PORT)) as sock:

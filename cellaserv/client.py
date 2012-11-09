@@ -97,9 +97,10 @@ class AbstractClient:
 
         self.send_message(message, *args, **kwargs)
 
-    def server_status(self, *args, **kwargs):
+    def server(self, action, *args, **kwargs):
         message = {}
-        message['command'] = 'status'
+        message['command'] = 'server'
+        message['action'] = action
         message['id'] = str(uuid.uuid4())
 
         self.send_message(message, *args, **kwargs)
@@ -118,7 +119,7 @@ class SynClient(AbstractClient):
         self._buffer = sock.makefile()
         self._messages_waiting = {}
 
-        resp = self.server_status()
+        resp = self.server('status')
         if resp['data']['protocol-version'] != __protocol_version__:
             print("Warning: Version mismatch between client and server.")
 
@@ -165,8 +166,8 @@ class SynClient(AbstractClient):
 
         return self.read_message(message_id)
 
-    def server_status(self):
-        message_id = super().server_status()
+    def server(self, action, *args, **kwargs):
+        message_id = super().server(action, *args, **kwargs)
 
         return self.read_message(message_id)
 
