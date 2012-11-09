@@ -119,7 +119,7 @@ class SynClient(AbstractClient):
         self._buffer = sock.makefile()
         self._messages_waiting = {}
 
-        resp = self.server('status')
+        resp = self.server('protocol-version')
         if resp['data']['protocol-version'] != __protocol_version__:
             print("Warning: Version mismatch between client and server.")
 

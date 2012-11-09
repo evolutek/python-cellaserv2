@@ -69,14 +69,6 @@ class TestCellaserv(unittest.TestCase):
 
         return resp_dict
 
-class VersionTest(TestCellaserv):
-
-    def test_version(self):
-        client = cellaserv.client.SynClient(self.new_socket())
-        resp = client.server('status')
-        self.assertEqual(resp['data']['protocol-version'],
-                cellaserv.client.__protocol_version__)
-
 class BasicTests(TestCellaserv):
 
     def test_complete_gibberish(self):
@@ -252,6 +244,46 @@ class TestClientNotify(TestCellaserv):
         self.assertEqual(notify['command'], 'notify')
 
         date_serv.terminate()
+
+class TestServer(TestCellaserv):
+
+    def test_list_services(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('list-services')
+
+        self.assertEqual(type(resp['data']['services']), type([]))
+
+        client.register_service("foobar")
+
+        resp2 = client.server('list-services')
+
+        self.assertEqual(len(resp['data']['services']) + 1,
+                len(resp2['data']['services']))
+
+    def test_connections_open(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('connections-open')
+
+        self.assertEqual(type(resp['data']['connections-open']), int)
+
+        client2 = cellaserv.client.SynClient(self.new_socket())
+        resp2 = client.server('connections-open')
+
+        self.assertEqual(resp['data']['connections-open'] + 1,
+                resp2['data']['connections-open'])
+
+    def test_cellaserv_version(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('cellaserv-version')
+
+        self.assertEqual(type(resp['data']['cellaserv-version']), str)
+
+    def test_version(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('protocol-version')
+        self.assertEqual(resp['data']['protocol-version'],
+                cellaserv.client.__protocol_version__)
+
 
 if __name__ == "__main__":
     unittest.main()
