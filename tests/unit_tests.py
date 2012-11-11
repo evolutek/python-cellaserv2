@@ -86,12 +86,12 @@ class BasicTests(TestCellaserv):
     def test_partial_packet(self):
         self.socket.send(b'{"command"')
         time.sleep(0)
-        self.socket.send(b': "server", "action": "status", "id": "42"}')
+        self.socket.send(b': "server", "action": "list-services", "id": "42"}')
         time.sleep(0)
         self.socket.send(b'\n')
 
         resp = self.readline()
-        self.assertIn("service-count", resp)
+        self.assertIn("services", resp)
 
     def test_command_unknwon(self):
         commands = [
@@ -141,9 +141,9 @@ class BasicTests(TestCellaserv):
         time.sleep(0.1) # time to process connections (qt is async)
 
         client = cellaserv.client.SynClient(self.socket)
-        status = client.server('status')
+        status = client.server('list-services')
 
-        self.assertEqual(status['data']["service-count"], 100)
+        self.assertEqual(len(status['data']['services']), 100)
 
 def start_date_service(ident="test"):
     with socket.create_connection((HOST, PORT)) as sock:
