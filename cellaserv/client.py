@@ -178,12 +178,12 @@ class SynClientDebug(SynClient):
     Prints mesages sent/recieved"""
 
     def _message_recieved(self, message):
-        print("<< " + str(message))
+        print("<< " + str(message).replace("'", '"'))
 
         super()._message_recieved(message)
 
     def _message_sent(self, message):
-        print(">> " + str(message))
+        print(">> " + str(message).replace("'", '"'))
 
         super()._message_sent(message)
 
@@ -255,11 +255,11 @@ class AsynClientDebug(AsynClient):
     Prints mesages sent/recieved."""
 
     def _message_recieved(self, message):
-        print("<< " + str(message))
+        print("<< " + str(message).replace("'", '"'))
 
         super()._message_recieved(message)
 
     def _message_sent(self, message):
-        print(">> " + str(message))
+        print(">> " + str(message).replace("'", '"'))
 
         super()._message_sent(message)
