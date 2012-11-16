@@ -7,8 +7,8 @@ class DateService(Service):
     service_name = "date"
 
     @Service.action
-    def epoch(self):
-        return 42
+    def time(self):
+        return int(time.time())
 
     @Service.event
     def kill(self):
