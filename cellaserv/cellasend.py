@@ -2,17 +2,21 @@
 """
 Send a message to cellaserv.
 
-Use ``-v`` if you want to see the response.
+Default server: ``evolutek.org`` port ``4200``
 
-Example use::
+Example usage::
 
-    $ cellasend -v command=status
-    >> {'command': 'status'}
-    << {'services': [{'name': 'date'}], 'service_count': 1, 'messages_waiting_ack': 0, 'version': '0.2', 'connections_open': 2}
+    $ cellasend command=query service=date action=epoch
+    >> {"action": "protocol-version", "id": "1dacff38-5511-436f-9bea-8acc6158dafc", "command": "server"}
+    << {"data": {"protocol-version": "0.5"}, "id": "1dacff38-5511-436f-9bea-8acc6158dafc", "command": "ack"}
+    >> {"action": "epoch", "service": "date", "id": "0934ddd9-6ab6-426f-8105-0e92d477ef8c", "command": "query"}
+    << {"ack-data": {"epoch": 1352746477}, "id": "0934ddd9-6ab6-426f-8105-0e92d477ef8c", "command": "ack"}
 
-    $ cellasend -v command=query service=date action=epoch
-    >> {'action': 'epoch', 'service': 'date', 'command': 'query', 'id': '363cd1e9-eb88-499b-bbe9-e122b98446b3'}
-    << {'command': 'ack', 'ack-data': {'epoch': 1351606050}, 'id': '363cd1e9-eb88-499b-bbe9-e122b98446b3'}
+    $ cellasend command=server action=list-services
+    >> {"id": "8d6cc9cd-39d4-4fd0-af19-1ff2056bcf14", "action": "protocol-version", "command": "server"}
+    << {"id": "8d6cc9cd-39d4-4fd0-af19-1ff2056bcf14", "data": {"protocol-version": "0.5"}, "command": "ack"}
+    >> {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "action": "list-services", "command": "server"}
+    << {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "data": {"services": []}, "command": "ack"}
 """
 
 __version__ = "0.1"
@@ -32,21 +36,32 @@ class AssocAction(argparse.Action):
         namespace.json_dict = {}
         try:
             for assoc in values:
-                key, value = assoc.split('=')
-                namespace.json_dict[key] = value
+                key, value = assoc.split('=', maxsplit=1)
+
+                # quick and dirty: .key=stuff <=> msg['data'][key] = stuff
+                if key.startswith('.'):
+                    data_key = key.split('.', maxsplit=1)[1]
+                    try:
+                        namespace.json_dict['data'][data_key] = value
+                    except KeyError:
+                        namespace.json_dict['data'] = {}
+                        namespace.json_dict['data'][data_key] = value
+                else:
+                    namespace.json_dict[key] = value
         except ValueError:
             parser.error("{} is not a valid key=value argument".format(values))
 
 def main():
     parser = argparse.ArgumentParser(description="Send messages to cellaserv")
-    parser.add_argument("--version", action="version",
-        version="%(prog)s v" + __version__)
+    parser.add_argument("-v", "--version", action="version",
+            version="%(prog)s v" + __version__ + ", protocol: v" +
+            cellaserv.client.__protocol_version__)
     parser.add_argument("-s", "--server", default="evolutek.org",
             help="hostname/ip of the server (default evolutek.org)")
     parser.add_argument("-p", "--port", type=int, default=4200,
             help="port of the server (default 4200)")
-    parser.add_argument("-v", "--verbose", action="store_true",
-            help="be verbose, output messages sent")
+    parser.add_argument("-n", "--non-verbose", action="store_true",
+            help="be less verbose, do no print messages")
     parser.add_argument("key=value", nargs="+", metavar="json_dict",
             help="data to be put in the message sent to cellaserv",
             action=AssocAction)
@@ -54,22 +69,22 @@ def main():
     args = parser.parse_args()
 
     with socket.create_connection((args.server, args.port)) as conn:
-        if args.verbose:
-            client = cellaserv.client.SynClientDebug(conn)
-        else:
+        if args.non_verbose:
             client = cellaserv.client.SynClient(conn)
+        else:
+            client = cellaserv.client.SynClientDebug(conn)
 
         message = args.json_dict
 
         # tweak the message if necessary
         if 'command' in message \
-                and message['command'] in ('query', 'register') \
+                and message['command'] in ('query', 'register', 'server') \
                 and 'id' not in message:
             message['id'] = str(uuid.uuid4())
 
         client.send_message(message)
 
-        if args.verbose:
+        if not args.non_verbose:
             client.read_message()
 
 if __name__ == "__main__":

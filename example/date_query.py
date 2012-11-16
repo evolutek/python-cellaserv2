@@ -20,6 +20,9 @@ class SynDateQueryClient(cellaserv.client.SynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
+    def epoch(self):
+        return self.query('epoch', 'date')
+
 def main():
     import asyncore
     import socket
@@ -31,7 +34,7 @@ def main():
     with socket.create_connection((HOST, PORT)) as sock:
         client = SynDateQueryClient(sock)
         for i in range(10):
-            print(client.query('epoch', 'date'))
+            print(client.epoch())
 
     with socket.create_connection((HOST, PORT)) as sock:
         client = AsynDateQueryClient(sock)

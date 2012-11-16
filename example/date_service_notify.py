@@ -5,7 +5,7 @@ import time
 
 import cellaserv.client
 
-class DateNotifier(cellaserv.client.SynClientDebug):
+class DateNotifier(cellaserv.client.SynClient):
     def __init__(self, sock):
         super().__init__(sock=sock)
 

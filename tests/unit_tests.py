@@ -13,9 +13,15 @@ import uuid
 
 import cellaserv.client
 from tests import local_settings
-import example.date_service as date_service
+
+from example import date_service
+from example import date_service_notify
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
+
+ERRORS = {
+        "missing_command": "Message missing 'command' component",
+}
 
 class TestCellaserv(unittest.TestCase):
 
@@ -63,21 +69,13 @@ class TestCellaserv(unittest.TestCase):
 
         return resp_dict
 
-class VersionTest(TestCellaserv):
-
-    def test_version(self):
-        client = cellaserv.client.SynClient(self.new_socket())
-        client.server_status()
-        resp = client.read_message()
-        self.assertEqual(resp['protocol-version'], client._PROTOCOL_VERSION)
-
 class BasicTests(TestCellaserv):
 
     def test_complete_gibberish(self):
         self.socket.send(b'\n\n{"foo"} 314231234\n{""}\n{"aaa": "foo"}\n')
         resp = self.readline()
         self.assertEqual(json.loads(resp), {"error":
-            "message does not contain 'command' component"})
+            ERRORS['missing_command']})
 
     def test_qjson_bug(self):
         self.socket.send(b'{""}\n{"command":"unknown"}\n')
@@ -88,12 +86,12 @@ class BasicTests(TestCellaserv):
     def test_partial_packet(self):
         self.socket.send(b'{"command"')
         time.sleep(0)
-        self.socket.send(b': "status"}')
+        self.socket.send(b': "server", "action": "list-services", "id": "42"}')
         time.sleep(0)
         self.socket.send(b'\n')
 
         resp = self.readline()
-        self.assertIn("service-count", resp)
+        self.assertIn("services", resp)
 
     def test_command_unknwon(self):
         commands = [
@@ -108,7 +106,7 @@ class BasicTests(TestCellaserv):
             self.send_command(command)
             resp = self.readline()
             self.assertEqual(json.loads(resp), {"error":
-                "message does not contain 'command' component"})
+                ERRORS['missing_command']})
 
     def test_command_register_service(self):
         command = {"command": "register",
@@ -133,22 +131,19 @@ class BasicTests(TestCellaserv):
         command = {"command": "register",
                 "service": "test"}
 
-        for i in range(1000):
+        for i in range(100):
             command["identification"] = str(i)
             command['id'] = str(uuid.uuid4())
 
             sock = self.new_socket()
             sock.send(json.dumps(command).encode("ascii") + b'\n')
 
-        import time
         time.sleep(0.1) # time to process connections (qt is async)
 
-        command = {}
-        command["command"] = "status"
+        client = cellaserv.client.SynClient(self.socket)
+        status = client.server('list-services')
 
-        self.send_command(command)
-        resp = self.readline()
-        self.assertEqual(json.loads(resp)["service-count"], 1000)
+        self.assertEqual(len(status['data']['services']), 100)
 
 def start_date_service(ident="test"):
     with socket.create_connection((HOST, PORT)) as sock:
@@ -157,24 +152,44 @@ def start_date_service(ident="test"):
 
         asyncore.loop()
 
-class TestClientService(TestCellaserv):
+class TestSynClientService(TestCellaserv):
 
     def test_query(self):
         date_serv = multiprocessing.Process(target=start_date_service)
         date_serv.start()
-        import time
         time.sleep(0.5) # time for child process to start
 
         client = cellaserv.client.SynClient(self.new_socket())
 
-        client.query("epoch", "date")
+        resp = client.query("epoch", "date")
+
+        self.assertEqual(resp["command"], "ack")
+        self.assertIn("id", resp)
+        self.assertIn("data", resp)
+        self.assertIn("epoch", resp["data"])
+
+        date_serv.terminate()
+
+    def test_query_unknown_action(self):
+        date_serv = multiprocessing.Process(target=start_date_service)
+        date_serv.start()
+        time.sleep(0.5) # time for child process to start
+
+        client = cellaserv.client.SynClient(self.new_socket())
+
+        resp = client.query("foobarlol", "date")
+
+        self.assertEqual(resp["command"], "ack")
+        self.assertIn("id", resp)
+        self.assertIn("data", resp)
+        self.assertEqual(resp["data"],
+            {'error': "unknown action: 'foobarlol'"})
 
         date_serv.terminate()
 
     def test_many_query(self):
         date_serv = multiprocessing.Process(target=start_date_service)
         date_serv.start()
-        import time
         time.sleep(0.5) # time for child process to start
 
         client = cellaserv.client.SynClient(self.new_socket())
@@ -187,28 +202,88 @@ class TestClientService(TestCellaserv):
 class TestNotify(TestCellaserv):
 
     def test_notify(self):
-        client0 = cellaserv.client.SynClient(self.socket)
-        client0.register_service("notify-test")
-
-        import time
-        time.sleep(0.4)
-
         client1 = cellaserv.client.SynClient(self.new_socket())
         client1.subscribe_event('foobar')
 
+        time.sleep(0)
+
+        client0 = cellaserv.client.SynClient(self.socket)
+        client0.register_service("notify-test")
         client0.notify('foobar', 'test')
 
         notify = client1.read_message()
 
-        self.assertEqual({ "command" : "notify", "notify" : "foobar",
-            "notify-data" : "test" }, notify)
+        self.assertEqual(notify['data'], 'test')
+
+        ack = {}
+        ack['command'] = 'ack'
+        ack['id'] = notify['id']
+        client0.send_message(ack)
 
     def test_notify_no_emitter(self):
         client = cellaserv.client.SynClient(self.socket)
         client.notify("test")
         client.notify("test", [1, 2, "a"])
 
-        client.server_status()
+def start_date_notifier():
+    with socket.create_connection((HOST, PORT)) as sock:
+        service = date_service_notify.DateNotifier(sock)
+        service.run()
+
+class TestClientNotify(TestCellaserv):
+
+    def test_notify(self):
+        date_serv = multiprocessing.Process(target=start_date_notifier)
+        date_serv.start()
+
+        client = cellaserv.client.SynClient(self.socket)
+        client.subscribe_event('epoch')
+
+        notify = client.read_message()
+
+        self.assertEqual(notify['command'], 'notify')
+
+        date_serv.terminate()
+
+class TestServer(TestCellaserv):
+
+    def test_list_services(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('list-services')
+
+        self.assertEqual(type(resp['data']['services']), type([]))
+
+        client.register_service("foobar")
+
+        resp2 = client.server('list-services')
+
+        self.assertEqual(len(resp['data']['services']) + 1,
+                len(resp2['data']['services']))
+
+    def test_connections_open(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('connections-open')
+
+        self.assertEqual(type(resp['data']['connections-open']), int)
+
+        client2 = cellaserv.client.SynClient(self.new_socket())
+        resp2 = client.server('connections-open')
+
+        self.assertEqual(resp['data']['connections-open'] + 1,
+                resp2['data']['connections-open'])
+
+    def test_cellaserv_version(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('cellaserv-version')
+
+        self.assertEqual(type(resp['data']['cellaserv-version']), str)
+
+    def test_version(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.server('protocol-version')
+        self.assertEqual(resp['data']['protocol-version'],
+                cellaserv.client.__protocol_version__)
+
 
 if __name__ == "__main__":
     unittest.main()
