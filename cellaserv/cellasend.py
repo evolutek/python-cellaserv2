@@ -36,15 +36,26 @@ class AssocAction(argparse.Action):
         namespace.json_dict = {}
         try:
             for assoc in values:
-                key, value = assoc.split('=')
-                namespace.json_dict[key] = value
+                key, value = assoc.split('=', maxsplit=1)
+
+                # quick and dirty: .key=stuff <=> msg['data'][key] = stuff
+                if key.startswith('.'):
+                    data_key = key.split('.', maxsplit=1)[1]
+                    try:
+                        namespace.json_dict['data'][data_key] = value
+                    except KeyError:
+                        namespace.json_dict['data'] = {}
+                        namespace.json_dict['data'][data_key] = value
+                else:
+                    namespace.json_dict[key] = value
         except ValueError:
             parser.error("{} is not a valid key=value argument".format(values))
 
 def main():
     parser = argparse.ArgumentParser(description="Send messages to cellaserv")
-    parser.add_argument("--version", action="version",
-        version="%(prog)s v" + __version__)
+    parser.add_argument("-v", "--version", action="version",
+            version="%(prog)s v" + __version__ + ", protocol: v" +
+            cellaserv.client.__protocol_version__)
     parser.add_argument("-s", "--server", default="evolutek.org",
             help="hostname/ip of the server (default evolutek.org)")
     parser.add_argument("-p", "--port", type=int, default=4200,
