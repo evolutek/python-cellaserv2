@@ -145,6 +145,16 @@ class BasicTests(TestCellaserv):
 
         self.assertEqual(len(status['data']['services']), 100)
 
+class TestTimeout(TestCellaserv):
+
+    def test_query_timeout(self):
+        slow_client = cellaserv.client.SynClient(self.new_socket())
+        slow_client.register_service("slow")
+
+        client = cellaserv.client.SynClient(self.new_socket())
+        resp = client.query("nothing", service="slow")
+        self.assertEqual(resp["command"], "timeout")
+
 def start_date_service(ident="test"):
     with socket.create_connection((HOST, PORT)) as sock:
         service = date_service.DateService(sock)
