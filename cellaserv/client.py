@@ -139,10 +139,14 @@ class SynClient(AbstractClient):
         return message
 
     def read_message(self, message_id=None):
+        """ Read one message or read messages until ``message_id`` is found"""
         if message_id:
             while message_id not in self._messages_waiting:
                 new_message = self._read_single_message()
-                self._messages_waiting[new_message['id']] = new_message
+                try:
+                    self._messages_waiting[new_message['id']] = new_message
+                except KeyError:
+                    return new_message
 
             message = self._messages_waiting[message_id]
             del self._messages_waiting[message_id]
@@ -157,11 +161,13 @@ class SynClient(AbstractClient):
     ### Commands
 
     def register_service(self, *args, **kwargs):
+        """ Blocking service register """
         message_id = super().register_service(*args, **kwargs)
 
         return self.read_message(message_id)
 
     def query(self, *args, **kwargs):
+        """ Blocking query """
         message_id = super().query(*args, **kwargs)
 
         return self.read_message(message_id)
