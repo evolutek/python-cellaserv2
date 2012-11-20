@@ -4,7 +4,7 @@ import sys
 
 import cellaserv.client
 
-class Service(cellaserv.client.AsynClientDebug):
+class Service(cellaserv.client.AsynClient):
     _actions = {}
     _events = {}
 
@@ -66,7 +66,8 @@ class Service(cellaserv.client.AsynClientDebug):
             else:
                 ack_data = callback(self)
 
-            ack['data'] = ack_data
+            if ack_data:
+                ack['data'] = ack_data
         except Exception as e:
             print(e, file=sys.stderr)
             ack['data'] = str(e)
@@ -79,7 +80,7 @@ class Service(cellaserv.client.AsynClientDebug):
         if self.service_name:
             service_name = self.service_name
         else:
-            service_name = self.__class__.__name__
+            service_name = self.__class__.__name__.lower()
 
         self.register_service(service_name, self.identification)
 
