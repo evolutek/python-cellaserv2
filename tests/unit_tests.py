@@ -29,7 +29,23 @@ class TestCellaserv(unittest.TestCase):
     def setUpClass(cls):
         cls._sockets = []
 
+    def new_socket(self):
+        sock = socket.create_connection((HOST, PORT))
+        self._sockets.append(sock)
+
+        return sock
+
+    def tearDown(self):
+        for sock in self._sockets:
+            sock.close()
+
+        self._sockets[:] = []
+
+class BasicTests(TestCellaserv):
+
     def setUp(self):
+        super().setUp()
+
         self.socket = self.new_socket()
         self.buffer = self.socket.makefile()
 
@@ -68,8 +84,6 @@ class TestCellaserv(unittest.TestCase):
         self.assertEqual(resp_dict["id"], command["id"])
 
         return resp_dict
-
-class BasicTests(TestCellaserv):
 
     def test_complete_gibberish(self):
         self.socket.send(b'\n\n{"foo"} 314231234\n{""}\n{"aaa": "foo"}\n')
@@ -140,7 +154,7 @@ class BasicTests(TestCellaserv):
 
         time.sleep(0.1) # time to process connections (qt is async)
 
-        client = cellaserv.client.SynClient(self.socket)
+        client = cellaserv.client.SynClient(self.new_socket())
         status = client.server('list-services')
 
         self.assertEqual(len(status['data']['services']), 100)
@@ -217,7 +231,7 @@ class TestNotify(TestCellaserv):
 
         time.sleep(0)
 
-        client0 = cellaserv.client.SynClient(self.socket)
+        client0 = cellaserv.client.SynClient(self.new_socket())
         client0.register_service("notify-test")
         client0.notify('foobar', 'test')
 
@@ -231,7 +245,7 @@ class TestNotify(TestCellaserv):
         client0.send_message(ack)
 
     def test_notify_no_emitter(self):
-        client = cellaserv.client.SynClient(self.socket)
+        client = cellaserv.client.SynClient(self.new_socket())
         client.notify("test")
         client.notify("test", [1, 2, "a"])
 
@@ -246,7 +260,7 @@ class TestClientNotify(TestCellaserv):
         date_serv = multiprocessing.Process(target=start_date_notifier)
         date_serv.start()
 
-        client = cellaserv.client.SynClient(self.socket)
+        client = cellaserv.client.SynClient(self.new_socket())
         client.subscribe_event('epoch')
 
         notify = client.read_message()
