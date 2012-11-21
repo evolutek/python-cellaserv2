@@ -242,12 +242,14 @@ class TestNotify(TestCellaserv):
         ack = {}
         ack['command'] = 'ack'
         ack['id'] = notify['id']
-        client0.send_message(ack)
+        client1.send_message(ack)
 
     def test_notify_no_emitter(self):
         client = cellaserv.client.SynClient(self.new_socket())
         client.notify("test")
         client.notify("test", [1, 2, "a"])
+
+    # TODO: test register twice
 
 def start_date_notifier():
     with socket.create_connection((HOST, PORT)) as sock:
@@ -266,6 +268,10 @@ class TestClientNotify(TestCellaserv):
         notify = client.read_message()
 
         self.assertEqual(notify['command'], 'notify')
+        ack = {}
+        ack['command'] = 'ack'
+        ack['id'] = notify['id']
+        client.send_message(ack)
 
         date_serv.terminate()
 
