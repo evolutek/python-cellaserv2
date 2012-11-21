@@ -33,7 +33,8 @@ class Service(cellaserv.client.AsynClient):
 
     # Regular methods
 
-    def __init__(self):
+    def __init__(self, identification=None):
+        # setup socket
         try:
             import local_settings
             HOST, PORT = local_settings.HOST, local_settings.PORT
@@ -42,6 +43,9 @@ class Service(cellaserv.client.AsynClient):
                     "using default host:port (evolutek.org:4200)",
                     file=sys.stderr)
             HOST, PORT = "evolutek.org", 4200
+
+        if not self.identification:
+            self.identification = identification
 
         sock = socket.create_connection((HOST, PORT))
         super().__init__(sock)
