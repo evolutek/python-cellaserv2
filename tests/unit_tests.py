@@ -145,6 +145,10 @@ class BasicTests(TestCellaserv):
         command = {"command": "register",
                 "service": "test"}
 
+        client = cellaserv.client.SynClient(self.new_socket())
+        status = client.server('list-services')
+        before = len(status['data']['services'])
+
         for i in range(100):
             command["identification"] = str(i)
             command['id'] = str(uuid.uuid4())
@@ -154,10 +158,8 @@ class BasicTests(TestCellaserv):
 
         time.sleep(0.1) # time to process connections (qt is async)
 
-        client = cellaserv.client.SynClient(self.new_socket())
         status = client.server('list-services')
-
-        self.assertEqual(len(status['data']['services']), 100)
+        self.assertEqual(len(status['data']['services']), before+100)
 
 class TestTimeout(TestCellaserv):
 
@@ -166,7 +168,7 @@ class TestTimeout(TestCellaserv):
         slow_client.register_service("slow")
 
         client = cellaserv.client.SynClient(self.new_socket())
-        resp = client.query("nothing", service="slow")
+        resp = client.query("nothing", to_service="slow")
         self.assertEqual(resp["command"], "timeout")
 
 def start_date_service(ident="test"):
