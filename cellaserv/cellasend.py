@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Author: Rémi Audebert <mail@halfr.net>
+# Evolutek 2013
 """
 Send a message to cellaserv.
 
@@ -17,15 +19,18 @@ Example usage::
     << {"id": "8d6cc9cd-39d4-4fd0-af19-1ff2056bcf14", "data": {"protocol-version": "0.5"}, "command": "ack"}
     >> {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "action": "list-services", "command": "server"}
     << {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "data": {"services": []}, "command": "ack"}
+
+    # Short syntax for data={"duration": 1}
+    $ cellasend command=query service=timer action=start .duration=1
 """
 
-__version__ = "0.1"
+__version__ = "0.1.1"
 
-import sys
-if sys.version_info.minor < 2:
+try:
+    import argparse
+except ImportError:
     raise SystemExit("Python version must be >=3.2 for the argparse module")
 
-import argparse
 import socket
 import uuid
 
@@ -63,7 +68,7 @@ def main():
     parser.add_argument("-n", "--non-verbose", action="store_true",
             help="be less verbose, do no print messages")
     parser.add_argument("key=value", nargs="+", metavar="json_dict",
-            help="data to be put in the message sent to cellaserv",
+            help="content of the message sent to cellaserv",
             action=AssocAction)
 
     args = parser.parse_args()
@@ -86,6 +91,8 @@ def main():
 
         if not args.non_verbose:
             client.read_message()
+        else:
+            print(client.read_message())
 
 if __name__ == "__main__":
     main()
