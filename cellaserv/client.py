@@ -1,6 +1,9 @@
 """
 Python base class for writing clients for cellaserv.
 
+These classes only manipulates *messages* that are json objects. If you are
+looking for a high level API you should use ``cellaserv.service.Service``.
+
 Sample usage is provided in the ``example/`` folder of the source distribution.
 """
 
