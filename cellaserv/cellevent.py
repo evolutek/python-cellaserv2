@@ -46,21 +46,29 @@ def main():
 
     args = parser.parse_args()
 
-    def callback(message):
-        if args.non_verbose:
-            try:
-                print(message['data'])
-            except:
-                pass
-        if args.spawn:
-            for command in args.spawn:
-                subprocess.call(command.format(**message.get('data', {})), shell=True)
-
     with socket.create_connection((args.server, args.port)) as conn:
         if args.non_verbose:
             client = cellaserv.client.AsynClient(conn)
         else:
             client = cellaserv.client.AsynClientDebug(conn)
+
+        def callback(message):
+            # Ack event
+            ack = {}
+            ack['command'] = 'ack'
+            ack['id'] = message['id']
+            client.send_message(ack)
+
+            if args.non_verbose:
+                try:
+                    print(message['data'])
+                except:
+                    pass
+
+            if args.spawn:
+                for command in args.spawn:
+                    subprocess.call(command.format(**message.get('data', {})),
+                            shell=True)
 
         for event_name in args.event_names:
             client.subscribe_event(event_name)
