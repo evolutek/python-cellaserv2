@@ -11,7 +11,9 @@ setup(
     packages = ['cellaserv'],
     entry_points = {
         'console_scripts': [
-            'cellasend = cellaserv.cellasend:main'
+            'cellasend = cellaserv.cellasend:main',
+            'cellaquery = cellaserv.cellaquery:main',
+            'cellevent = cellaserv.cellevent:main',
             ]
         },
 
