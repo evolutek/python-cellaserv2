@@ -9,6 +9,8 @@ Default server: ``evolutek.org`` port ``4200``
 Example usage::
 
     $ cellaquery identification:service_name.action parameters
+
+    $ cellaquery timer.start duration=1
 """
 
 __version__ = "0.1"
@@ -50,7 +52,7 @@ class QueryAction(argparse.Action):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Send query to cellaserv")
+    parser = argparse.ArgumentParser(description="Send a query to cellaserv")
     parser.add_argument("-v", "--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)

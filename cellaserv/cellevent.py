@@ -2,13 +2,15 @@
 # Author: Rémi Audebert <mail@halfr.net>
 # Evolutek 2013
 """
-Wait for an event from cellaserv.
+Subscribe to events from cellaserv.
 
 Default server: ``evolutek.org`` port ``4200``
 
 Example usage::
 
     $ cellevent event_name [event_name]...
+
+    $ cellevent timer-done -S beep
 """
 
 __version__ = "0.1"
@@ -26,7 +28,7 @@ import sys
 import cellaserv.client
 
 def main():
-    parser = argparse.ArgumentParser(description="Send query to cellaserv")
+    parser = argparse.ArgumentParser(description="Subscribe to events from cellaserv.")
     parser.add_argument("-v", "--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)
