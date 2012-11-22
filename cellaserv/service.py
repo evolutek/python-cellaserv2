@@ -70,7 +70,7 @@ class Service(cellaserv.client.AsynClient):
             else:
                 ack_data = callback(self)
 
-            if ack_data:
+            if ack_data is not None:
                 ack['data'] = ack_data
         except Exception as e:
             print(e, file=sys.stderr)
