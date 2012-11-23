@@ -5,11 +5,24 @@ import sys
 import cellaserv.client
 
 class Service(cellaserv.client.AsynClient):
-    _actions = {}
+
+    # Default actions
+
+    def version(self):
+        ret = {}
+        if self.version:
+            ret['version'] = self.version
+        if self.variant:
+            ret['variant'] = self.variant
+        return ret
+
+    _actions = {'version': version}
     _events = {}
 
     service_name = None
     identification = None
+    variant = None
+    version = None
 
     # Decorators
 
@@ -79,6 +92,8 @@ class Service(cellaserv.client.AsynClient):
             return
 
         self.send_message(ack)
+
+    # Convenience methods
 
     def run(self):
         if self.service_name:
