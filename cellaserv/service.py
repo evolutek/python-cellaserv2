@@ -18,7 +18,7 @@ class Service(cellaserv.client.AsynClient):
         if action:
             cls._actions[action] = method
         else:
-            cls._actions[method.__name__] = method
+            cls._actions[method.__name__.replace("_", "-")] = method
 
         return method
 
