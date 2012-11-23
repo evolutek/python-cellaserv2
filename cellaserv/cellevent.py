@@ -53,7 +53,6 @@ def main():
             client = cellaserv.client.AsynClientDebug(conn)
 
         def callback(message):
-            # Ack event
             ack = {}
             ack['command'] = 'ack'
             ack['id'] = message['id']
