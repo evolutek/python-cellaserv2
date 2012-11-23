@@ -251,7 +251,27 @@ class TestNotify(TestCellaserv):
         client.notify("test")
         client.notify("test", [1, 2, "a"])
 
-    # TODO: test register twice
+    def test_notify_many(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        client.subscribe_event("test")
+
+        test = cellaserv.client.SynClient(self.new_socket())
+        for i in range(1000):
+            test.notify("test")
+
+        for i in range(1000):
+            client.read_message()
+
+    def test_subscribe_twice(self):
+        client = cellaserv.client.SynClient(self.new_socket())
+        client.subscribe_event("test")
+        client.subscribe_event("test")
+
+        test = cellaserv.client.SynClient(self.new_socket())
+        test.notify("test")
+
+        # Only one message is sent.
+        client.read_message()
 
 def start_date_notifier():
     with socket.create_connection((HOST, PORT)) as sock:
