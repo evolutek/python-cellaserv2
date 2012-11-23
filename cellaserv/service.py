@@ -21,7 +21,7 @@ class Service(cellaserv.client.AsynClient):
 
     service_name = None
     identification = None
-    variant = None
+    variant = "python"
     version = None
 
     # Decorators
