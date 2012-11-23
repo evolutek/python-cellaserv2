@@ -7,8 +7,8 @@ looking for a high level API you should use ``cellaserv.service.Service``.
 Sample usage is provided in the ``example/`` folder of the source distribution.
 """
 
-__version__ = "0.5"
-__protocol_version__ = "0.5"
+__version__ = "1"
+__protocol_version__ = "1"
 
 import asynchat
 import json
