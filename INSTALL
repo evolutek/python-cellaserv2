@@ -3,6 +3,6 @@ Run:
     $ python3 setup.py build
     $ sudo python3 setup.py install
 
-Or using pip:
+Or using pip for git:
 
-    $ pip install 'git+ssh://git@evolutek/cellaserv_client.git#egg=python-cellaserv'
+    $ pip install 'git+ssh://git@bitbucket.org/evolutek/python-cellaserv.git#egg=python-cellaserv'

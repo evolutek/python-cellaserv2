@@ -24,7 +24,7 @@ Example usage::
     $ cellasend command=query service=timer action=start .duration=1
 """
 
-__version__ = "0.1.1"
+__version__ = "1"
 
 try:
     import argparse

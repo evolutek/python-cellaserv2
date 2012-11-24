@@ -95,7 +95,7 @@ class Service(cellaserv.client.AsynClient):
 
     # Convenience methods
 
-    def run(self):
+    def setup(self):
         if self.service_name:
             service_name = self.service_name
         else:
@@ -107,4 +107,10 @@ class Service(cellaserv.client.AsynClient):
             self.subscribe_event(event_name)
             self.connect_event(event_name, callback)
 
+    def run(self):
+        self.setup()
+        Service.loop()
+
+    @classmethod
+    def loop(cls):
         asyncore.loop()
