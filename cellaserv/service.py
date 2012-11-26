@@ -1,6 +1,7 @@
 import asyncore
 import socket
 import sys
+import traceback
 
 import cellaserv.client
 
@@ -86,7 +87,8 @@ class Service(cellaserv.client.AsynClient):
             if ack_data is not None:
                 ack['data'] = ack_data
         except Exception as e:
-            print(e, file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+
             ack['data'] = str(e)
             self.send_message(ack)
             return
