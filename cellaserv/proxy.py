@@ -27,7 +27,7 @@ class ActionProxy:
                     to_identification=self.identification, data=data)
         else:
             resp = self.client.query(self.action, to_service=self.service,
-                    data=data)['data']
+                    data=data)
 
         try:
             return resp['data']
@@ -53,12 +53,12 @@ class ServiceProxy:
 
 class CellaservProxy(cellaserv.client.SynClient):
 
-    def __init__(self, host="evolutek.org", port=4200):
-        self.host = host
-        self.port = port
-
-        self.socket = socket.create_connection((host, port))
-        self.client = cellaserv.client.SynClient(self.socket)
+    def __init__(self, client=None, host="evolutek.org", port=4200):
+        if client:
+            self.client = client
+        else:
+            self.socket = socket.create_connection((host, port))
+            self.client = cellaserv.client.SynClient(self.socket)
 
     def __getattr__(self, service_name):
         return ServiceProxy(service_name, self.client)
