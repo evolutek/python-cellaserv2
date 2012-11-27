@@ -47,6 +47,7 @@ class Service(cellaserv.client.AsynClient):
 
     # Regular methods
 
+    # TODO: Allow using already connected client
     def __init__(self, identification=None):
         # setup socket
         try:
@@ -64,6 +65,7 @@ class Service(cellaserv.client.AsynClient):
         sock = socket.create_connection((HOST, PORT))
         super().__init__(sock)
 
+    # TODO: Check identification
     def query_recieved(self, query):
         action = query['action']
 
@@ -98,6 +100,8 @@ class Service(cellaserv.client.AsynClient):
     # Convenience methods
 
     def setup(self):
+        """Use this if you want to setup multiple service before running
+        ``Service.loop()``."""
         if self.service_name:
             service_name = self.service_name
         else:
@@ -110,6 +114,7 @@ class Service(cellaserv.client.AsynClient):
             self.connect_event(event_name, callback)
 
     def run(self):
+        """One-shot to setup and start the service."""
         self.setup()
         Service.loop()
 
