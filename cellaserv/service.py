@@ -51,28 +51,42 @@ class Service(cellaserv.client.AsynClient):
     # Decorators
 
     @classmethod
-    def action(cls, method, action=None):
-        if not action:
-            action = method.__name__.replace("_", "-")
+    def action(cls, method_or_name):
+        def _set_action(method, action):
+            try:
+                method._actions.append(action)
+            except AttributeError:
+                method._actions = [action]
 
-        try:
-            method._actions.append(action)
-        except AttributeError:
-            method._actions = [action]
+            return method
 
-        return method
+        def _wrapper(method):
+            return _set_action(method, method_or_name)
+
+        if callable(method_or_name):
+            action = method_or_name.__name__.replace("_", "-")
+            return _set_action(method_or_name, action)
+        else:
+            return _wrapper
 
     @classmethod
-    def event(cls, method, event=None):
-        if not event:
-            event = method.__name__.replace("_", "-")
+    def event(cls, method_or_name):
+        def _set_event(method, event):
+            try:
+                method._events.append(event)
+            except AttributeError:
+                method._events = [event]
 
-        try:
-            method._events.append(event)
-        except AttributeError:
-            method._events = [event]
+            return method
 
-        return method
+        def _wrapper(method):
+            return _set_event(method, method_or_name)
+
+        if callable(method_or_name):
+            event = method_or_name.__name__.replace("_", "-")
+            return _set_event(method_or_name, event)
+        else:
+            return _wrapper
 
     # Regular methods
 
