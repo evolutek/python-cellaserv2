@@ -1,4 +1,5 @@
 import asyncore
+import inspect
 import socket
 import sys
 import traceback
@@ -7,45 +8,27 @@ import cellaserv.client
 
 class Service(cellaserv.client.AsynClient):
 
-    # Default actions
-
-    def version(self):
-        ret = {}
-        if self.version:
-            ret['version'] = self.version
-        if self.variant:
-            ret['variant'] = self.variant
-        return ret
-
-    _actions = {'version': version}
-    _events = {}
-
     service_name = None
     identification = None
     variant = "python"
     version = None
 
-    # Decorators
+    def __new__(cls):
+        _actions = {'version': cls.version}
+        _events = {}
 
-    @classmethod
-    def action(cls, method, action=None):
-        if action:
-            cls._actions[action] = method
-        else:
-            cls._actions[method.__name__.replace("_", "-")] = method
+        for name, method in inspect.getmembers(cls):
+            if hasattr(method, "_actions"):
+                for action in method._actions:
+                    _actions[action] = method
+            if hasattr(method, "_events"):
+                for event in method._events:
+                    _actions[event] = method
 
-        return method
+        cls._actions = _actions
+        cls._events = _events
 
-    @classmethod
-    def event(cls, method, event=None):
-        if event:
-            cls._events[event] = method
-        else:
-            cls._events[method.__name__.replace("_", "-")] = method
-
-        return method
-
-    # Regular methods
+        return super(Service, cls).__new__(cls)
 
     # TODO: Allow using already connected client
     def __init__(self, identification=None):
@@ -64,6 +47,34 @@ class Service(cellaserv.client.AsynClient):
 
         sock = socket.create_connection((HOST, PORT))
         super().__init__(sock)
+
+    # Decorators
+
+    @classmethod
+    def action(cls, method, action=None):
+        if not action:
+            action = method.__name__.replace("_", "-")
+
+        try:
+            method._actions.append(action)
+        except AttributeError:
+            method._actions = [action]
+
+        return method
+
+    @classmethod
+    def event(cls, method, event=None):
+        if not event:
+            event = method.__name__.replace("_", "-")
+
+        try:
+            method._events.append(event)
+        except AttributeError:
+            method._events = [event]
+
+        return method
+
+    # Regular methods
 
     # TODO: Check identification
     def query_recieved(self, query):
@@ -96,6 +107,16 @@ class Service(cellaserv.client.AsynClient):
             return
 
         self.send_message(ack)
+
+    # Default actions
+
+    def version(self):
+        ret = {}
+        if self.version:
+            ret['version'] = self.version
+        if self.variant:
+            ret['variant'] = self.variant
+        return ret or None
 
     # Convenience methods
 
