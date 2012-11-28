@@ -126,6 +126,15 @@ class Service(cellaserv.client.AsynClient):
     def setup(self):
         """Use this if you want to setup multiple service before running
         ``Service.loop()``."""
+
+        def _wrap(fun):
+            def wrap(msg):
+                if 'data' in msg:
+                    fun(self, **msg['data'])
+                else:
+                    fun(self)
+            return wrap
+
         if self.service_name:
             service_name = self.service_name
         else:
@@ -135,7 +144,7 @@ class Service(cellaserv.client.AsynClient):
 
         for event_name, callback in self._events.items():
             self.subscribe_event(event_name)
-            self.connect_event(event_name, callback)
+            self.connect_event(event_name, _wrap(callback))
 
     def run(self):
         """One-shot to setup and start the service."""
