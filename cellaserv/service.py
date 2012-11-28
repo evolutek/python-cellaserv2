@@ -13,7 +13,7 @@ class Service(cellaserv.client.AsynClient):
     variant = "python"
     version = None
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         _actions = {'version': cls.version}
         _events = {}
 
