@@ -30,23 +30,23 @@ class Service(cellaserv.client.AsynClient):
 
         return super(Service, cls).__new__(cls)
 
-    # TODO: Allow using already connected client
-    def __init__(self, identification=None):
-        # setup socket
-        try:
-            import local_settings
-            HOST, PORT = local_settings.HOST, local_settings.PORT
-        except:
-            print("Could not find 'local_settings.py', "
-                    "using default host:port (evolutek.org:4200)",
-                    file=sys.stderr)
-            HOST, PORT = "evolutek.org", 4200
+    def __init__(self, identification=None, sock=None):
+        if not sock:
+            try:
+                import local_settings
+                HOST, PORT = local_settings.HOST, local_settings.PORT
+            except:
+                print("Could not find 'local_settings.py', "
+                        "using default host:port (evolutek.org:4200)",
+                        file=sys.stderr)
+                HOST, PORT = "evolutek.org", 4200
+
+            sock = socket.create_connection((HOST, PORT))
+
+        super().__init__(sock)
 
         if not self.identification:
             self.identification = identification
-
-        sock = socket.create_connection((HOST, PORT))
-        super().__init__(sock)
 
     # Decorators
 
