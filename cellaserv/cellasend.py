@@ -89,6 +89,9 @@ def main():
 
         client.send_message(message)
 
+        if message['command'] == 'notify':
+            return
+
         if not args.non_verbose:
             client.read_message()
         else:
