@@ -23,7 +23,7 @@ class Service(cellaserv.client.AsynClient):
                     _actions[action] = method
             if hasattr(method, "_events"):
                 for event in method._events:
-                    _actions[event] = method
+                    _events[event] = method
 
         cls._actions = _actions
         cls._events = _events
