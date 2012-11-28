@@ -76,9 +76,12 @@ class Service(cellaserv.client.AsynClient):
 
     # Regular methods
 
-    # TODO: Check identification
     def query_recieved(self, query):
         action = query['action']
+
+        if 'identification' in query and \
+                query['identification'] != self.identification:
+                    return
 
         ack = {}
         ack['command'] = 'ack'
