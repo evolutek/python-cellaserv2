@@ -226,7 +226,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         """Process incoming message"""
         byte_data = b''.join(self._ibuffer)
         self._ibuffer = []
-        json_message = byte_data.decode('ascii')
+        json_message = byte_data.decode()
         message = json.loads(json_message)
 
         self._message_recieved(message)
