@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """
 Cellaserv HTTP Rest interface
+
+Example use::
+
+    $ python3 rest.py
+    $ wget -O - -o /dev/null --post-data 'goal=500' "cellaserv.evolutek.org/ax/5/move"
+    $ wget -O - -o /dev/null cellaserv.evolutek.org/webcam/porte
 """
 import json
 import os
