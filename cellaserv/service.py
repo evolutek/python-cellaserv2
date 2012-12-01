@@ -1,3 +1,22 @@
+"""
+Service allows you to write cellaserv services with high-level decorators :
+Service.action and Service.event.
+
+Example usage:
+
+    >>> from cellaserv.service import Service
+    >>> class Foo(Service):
+    ...     @Service.action
+    ...     def bar(self):
+    ...         print("bar")
+    ...
+    ...     @Service.event
+    ...     def bar(self):
+    ...         print("bar")
+    ...
+    >>> s = Foo()
+    >>> s.run()
+"""
 import asyncore
 import inspect
 import socket
@@ -51,6 +70,8 @@ class Service(cellaserv.client.AsynClient):
 
     @classmethod
     def action(cls, method_or_name):
+        """Use the ``Service.action`` decorator to declare the method as
+        callable from cellaserv"""
         def _set_action(method, action):
             try:
                 method._actions.append(action)
