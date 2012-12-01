@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""
+Cellaserv HTTP Rest interface
+"""
+import json
+import os
+import re
+import subprocess
+import urllib.parse
+
+from http.server import HTTPServer, CGIHTTPRequestHandler
+
+from cellaserv.proxy import CellaservProxy
+
+HOST, PORT = '', 4280
+
+SERVICE = re.compile('/(?P<service>.*?)/(?:(?P<identification>[^/]*)/)?(?P<action>.*)$')
+
+def tryint(x):
+    try:
+        return int(x)
+    except ValueError:
+        return x
+
+class RestAPI(CGIHTTPRequestHandler):
+    def send_query(self, params):
+        match = SERVICE.match(self.path)
+        if not match:
+            return
+
+        self.cs = CellaservProxy()
+
+        d = match.groupdict()
+
+        service = self.cs.__getattr__(d['service'])
+        if d['identification']:
+            service = service.__getitem__(tryint(d['identification']))
+
+        ret = service.__getattr__(d['action'])(**params)
+
+        self.wfile.write(str(ret).encode("utf8"))
+
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+
+        self.send_query({})
+
+    def do_POST(self):
+        self.send_response(200)
+        self.end_headers()
+
+        length = int(self.headers['Content-Length'])
+        post_data = urllib.parse.parse_qs(self.rfile.read(length).decode('utf-8'))
+
+        params = {k: tryint(v[0]) for k, v in post_data.items()}
+
+        self.send_query(params)
+
+def main():
+    try:
+        server = HTTPServer((HOST, PORT), RestAPI)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.socket.close()
+
+if __name__=='__main__':
+    main()
