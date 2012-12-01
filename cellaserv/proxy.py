@@ -34,7 +34,6 @@ class ActionProxy:
         except:
             return resp
 
-
 class ServiceProxy:
 
     def __init__(self, service_name, client):
@@ -47,7 +46,7 @@ class ServiceProxy:
                 self.client)
         return action
 
-    def __call__(self, identification):
+    def __getitem__(self, identification):
         self.identification = identification
         return self
 
