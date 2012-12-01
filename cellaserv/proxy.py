@@ -50,7 +50,7 @@ class ServiceProxy:
         self.identification = identification
         return self
 
-class CellaservProxy(cellaserv.client.SynClient):
+class CellaservProxy():
 
     def __init__(self, client=None, host="evolutek.org", port=4200):
         if client:
