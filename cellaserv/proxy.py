@@ -16,7 +16,7 @@ import cellaserv.client
 class ActionProxy:
 
     def __init__(self, action, service, identification, client):
-        self.action = action
+        self.action = action.replace('_', '-')
         self.service = service
         self.identification = identification
         self.client = client
