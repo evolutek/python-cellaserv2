@@ -25,7 +25,14 @@ import traceback
 
 import cellaserv.client
 
-class Service(cellaserv.client.AsynClient):
+DEBUG = False
+
+if DEBUG:
+    AsynClient = cellaserv.client.AsynClientDebug
+else:
+    AsynClient = cellaserv.client.AsynClient
+
+class Service(AsynClient):
 
     service_name = None
     identification = None
