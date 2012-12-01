@@ -41,6 +41,8 @@ class QueryAction(argparse.Action):
             rest = values[0]
             query['service'], query['action'] = rest.split('.', 1)
 
+        query['action'] = query['action'].replace('_', '-')
+
         if len(values) >= 2:
             data = {}
             for arg in values[1:]:
