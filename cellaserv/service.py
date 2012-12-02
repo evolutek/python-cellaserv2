@@ -134,6 +134,12 @@ class Service(AsynClient):
             ack['data'] = {'error': "unknown action: '{}'".format(action)}
             self.send_message(ack)
             return
+        except TypeError:
+            ack['data'] = {'error': "bad action type: '{}' of type {}".format(
+                action,
+                type(action))}
+            self.send_message(ack)
+            return
 
         try:
             if 'data' in query:
