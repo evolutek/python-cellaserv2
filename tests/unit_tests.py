@@ -168,8 +168,8 @@ class TestTimeout(TestCellaserv):
         slow_client.register_service("slow")
 
         client = cellaserv.client.SynClient(self.new_socket())
-        resp = client.query("nothing", to_service="slow")
-        self.assertEqual(resp["command"], "timeout")
+        with self.assertRaises(cellaserv.client.MessageTimeout):
+            client.query("nothing", "slow")
 
 def start_date_service(ident="test"):
     with socket.create_connection((HOST, PORT)) as sock:
