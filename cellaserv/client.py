@@ -16,6 +16,12 @@ import uuid
 
 from collections import defaultdict
 
+class MessageTimeout(Exception):
+    pass
+
+class BadMessage(Exception):
+    pass
+
 class AbstractClient:
     """Abstract client"""
 
@@ -148,10 +154,14 @@ class SynClient(AbstractClient):
                 new_message = self._read_single_message()
                 try:
                     self._messages_waiting[new_message['id']] = new_message
-                except KeyError:
-                    return new_message
+                except KeyError as exc:
+                    raise BadMessage(new_message) from exc
 
             message = self._messages_waiting.pop(message_id)
+
+            if message['command'] == 'timeout':
+                raise MessageTimeout(message_id)
+
             return message
 
         elif self._messages_waiting:
