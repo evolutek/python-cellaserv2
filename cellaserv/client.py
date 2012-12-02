@@ -151,8 +151,7 @@ class SynClient(AbstractClient):
                 except KeyError:
                     return new_message
 
-            message = self._messages_waiting[message_id]
-            del self._messages_waiting[message_id]
+            message = self._messages_waiting.pop(message_id)
             return message
 
         elif self._messages_waiting:
