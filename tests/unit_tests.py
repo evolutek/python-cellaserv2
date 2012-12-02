@@ -187,7 +187,7 @@ class TestSynClientService(TestCellaserv):
 
         client = cellaserv.client.SynClient(self.new_socket())
 
-        resp = client.query("epoch", "date")
+        resp = client.query("time", "date")
 
         self.assertEqual(resp["command"], "ack")
         self.assertIn("id", resp)

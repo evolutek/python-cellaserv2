@@ -131,7 +131,7 @@ class Service(AsynClient):
         try:
             callback = self._actions[action]
         except KeyError:
-            ack['data'] = "Unknown action: " + action
+            ack['data'] = {'error': "unknown action: '{}'".format(action)}
             self.send_message(ack)
             return
 

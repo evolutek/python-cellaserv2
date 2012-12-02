@@ -15,7 +15,7 @@ class DateService(Service):
 
     @Service.action
     def time(self):
-        return int(time.time())
+        return {'epoch': int(time.time())}
 
     @Service.event
     def kill(self):
