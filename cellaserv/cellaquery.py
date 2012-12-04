@@ -33,10 +33,6 @@ class QueryAction(argparse.Action):
         try:
             query['service'], rest = values[0].split('[', 1)
             query['identification'], query['action'] = rest.split('].', 1)
-            try:
-                query['identification'] = int(query['identification'])
-            except ValueError:
-                pass
         except ValueError: # no identification
             rest = values[0]
             query['service'], query['action'] = rest.split('.', 1)
