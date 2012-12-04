@@ -32,6 +32,7 @@ try:
 except ImportError:
     raise SystemExit("Python version must be >=3.2 for the argparse module")
 
+import pprint
 import socket
 import uuid
 
@@ -68,6 +69,8 @@ def main():
             help="port of the server (default 4200)")
     parser.add_argument("-n", "--non-verbose", action="store_true",
             help="be less verbose, do no print messages")
+    parser.add_argument("-P", "--pretty", action="store_true",
+            help="pretty print output")
     parser.add_argument("key=value", nargs="+", metavar="json_dict",
             help="content of the message sent to cellaserv",
             action=AssocAction)
@@ -96,7 +99,10 @@ def main():
         if not args.non_verbose:
             client.read_message()
         else:
-            print(client.read_message())
+            if args.pretty:
+                pprint.pprint(client.read_message())
+            else:
+                print(client.read_message())
 
 if __name__ == "__main__":
     main()
