@@ -4,7 +4,8 @@
 """
 Send a query to cellaserv.
 
-Default server: ``evolutek.org`` port ``4200``
+Default server: ``evolutek.org`` port ``4200``, or HOST, PORT values imported
+from ``local_settings.py``
 
 Example usage::
 
@@ -54,19 +55,24 @@ class QueryAction(argparse.Action):
 
 
 def main():
+    try:
+        import local_settings
+        HOST, PORT = local_settings.HOST, local_settings.PORT
+    except:
+        HOST, PORT = 'evolutek.org', 4200
+
     parser = argparse.ArgumentParser(description=__doc__,
             formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-v", "--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)
-    parser.add_argument("-s", "--server", default="evolutek.org",
-            help="hostname/ip of the server (default evolutek.org)")
-    parser.add_argument("-p", "--port", type=int, default=4200,
-            help="port of the server (default 4200)")
+    parser.add_argument("-s", "--server", default=HOST,
+            help="hostname/ip of the server")
+    parser.add_argument("-p", "--port", type=int, default=PORT,
+            help="port of the server")
     parser.add_argument("-n", "--non-verbose", action="store_true",
-            help="be less verbose, do no print messages")
-    parser.add_argument("[identification:]service.action([key=value], ...)",
-            metavar="query", nargs="+", help="The query sent to cellaserv",
+            help="be less verbose, do no print messages, only return value")
+    parser.add_argument("query", nargs="+", help="the query sent to cellaserv",
             action=QueryAction)
 
     args = parser.parse_args()
