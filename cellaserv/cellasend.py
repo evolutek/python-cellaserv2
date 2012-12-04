@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Author: Rémi Audebert <mail@halfr.net>
 # Evolutek 2013
+# TODO: use local_settings.py, if any
 """
 Send a message to cellaserv.
 
