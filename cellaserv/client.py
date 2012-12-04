@@ -119,7 +119,8 @@ class AbstractClient:
 class SynClient(AbstractClient):
     """Synchronous cellaserv client.
 
-    Checks server version on __init__()."""
+    Checks if server version matches with library version when calling
+    ``__init__()``."""
 
     def __init__(self, sock):
         super().__init__(sock=sock)
@@ -148,7 +149,7 @@ class SynClient(AbstractClient):
         return message
 
     def read_message(self, message_id=None):
-        """ Read one message or read messages until ``message_id`` is found"""
+        """Read one message or read messages until ``message_id`` is found"""
         if message_id:
             while message_id not in self._messages_waiting:
                 new_message = self._read_single_message()
@@ -228,11 +229,13 @@ class AsynClient(asynchat.async_chat, AbstractClient):
     # Asyncore methods
 
     def collect_incoming_data(self, data):
-        """Buffer the data"""
+        """Store incoming data in a buffer before the terminator
+        string is recieved."""
         self._ibuffer.append(data)
 
     def found_terminator(self):
-        """Process incoming message"""
+        """Process incoming message (used by ``asyncore`` to handle incomming
+        socket data)."""
         byte_data = b''.join(self._ibuffer)
         self._ibuffer = []
         json_message = byte_data.decode()
@@ -243,7 +246,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
     # Methods called by subclasses
 
     def set_ack_cb(self, f):
-        """Method called when a ``ack`` message is recieved"""
+        """Set the callback method called when a ``ack`` message is recieved."""
         self._ack_cb = f
 
     def connect_event(self, event, event_cb):
