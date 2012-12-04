@@ -54,7 +54,8 @@ class QueryAction(argparse.Action):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Send a query to cellaserv")
+    parser = argparse.ArgumentParser(description=__doc__,
+            formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-v", "--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)
