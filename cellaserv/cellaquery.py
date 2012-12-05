@@ -21,6 +21,7 @@ try:
 except ImportError:
     raise SystemExit("Python version must be >=3.2 for the argparse module")
 
+import pprint
 import socket
 import uuid
 
@@ -72,6 +73,8 @@ def main():
             help="port of the server")
     parser.add_argument("-n", "--non-verbose", action="store_true",
             help="be less verbose, do no print messages, only return value")
+    parser.add_argument("-P", "--pretty", action="store_true",
+            help="pretty print output")
     parser.add_argument("query", nargs="+", help="the query sent to cellaserv",
             action=QueryAction)
 
@@ -92,7 +95,10 @@ def main():
 
         if args.non_verbose:
             try:
-                print(ret_value['data'])
+                if args.pretty:
+                    pprint.pprint(ret_value['data'])
+                else:
+                    print(ret_value['data'])
             except:
                 pass
 
