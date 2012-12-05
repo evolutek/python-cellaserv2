@@ -1,6 +1,8 @@
 """
 Proxy object for cellaserv.
 
+Default server: ``evolutek.org`` port ``4200``.
+
 Example usage::
 
     >>> from cellaserv.proxy import CellaservProxy
@@ -14,6 +16,7 @@ import socket
 import cellaserv.client
 
 class ActionProxy:
+    """Action proxy for cellaserv."""
 
     def __init__(self, action, service, identification, client):
         self.action = action.replace('_', '-')
@@ -35,6 +38,7 @@ class ActionProxy:
             return resp
 
 class ServiceProxy:
+    """Service proxy for cellaserv."""
 
     def __init__(self, service_name, client):
         self.service_name = service_name
@@ -51,6 +55,7 @@ class ServiceProxy:
         return self
 
 class CellaservProxy():
+    """Proxy class for cellaserv."""
 
     def __init__(self, client=None, host="evolutek.org", port=4200):
         if client:
