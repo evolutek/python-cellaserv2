@@ -21,7 +21,7 @@ class DateService(cellaserv.client.AsynClient):
         response['command'] = 'ack'
         response['id'] = message['id']
 
-        if message['action'] == 'epoch':
+        if message['action'] == 'time':
             response['data'] = {'epoch': int(time.time())}
 
         else:
