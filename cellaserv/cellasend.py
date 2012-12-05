@@ -3,9 +3,9 @@
 # Evolutek 2013
 # TODO: use local_settings.py, if any
 """
-Send a message to cellaserv.
+Send a crafted message to cellaserv.
 
-Default server: ``evolutek.org`` port ``4200``
+Default server: ``evolutek.org`` port ``4200``.
 
 Example usage::
 
@@ -20,6 +20,17 @@ Example usage::
     << {"id": "8d6cc9cd-39d4-4fd0-af19-1ff2056bcf14", "data": {"protocol-version": "0.5"}, "command": "ack"}
     >> {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "action": "list-services", "command": "server"}
     << {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "data": {"services": []}, "command": "ack"}
+
+    # With pretty print:
+    $ cellasend command=server action=list-services -nP
+    {'command': 'ack',
+     'data': {'services': [{'identification': '3', 'name': 'ax'},
+                           {'identification': '5', 'name': 'ax'},
+                           {'name': 'webcam'},
+                           {'name': 'date'},
+                           {'name': 'timer'},
+                           {'name': 'twitter'}]},
+     'id': 'b65ad395-c277-42d0-bdb3-7d8a1614a046'}
 
     # Short syntax for data={"duration": 1}
     $ cellasend command=query service=timer action=start .duration=1
