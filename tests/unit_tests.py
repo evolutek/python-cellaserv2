@@ -86,10 +86,28 @@ class BasicTests(TestCellaserv):
         return resp_dict
 
     def test_complete_gibberish(self):
-        self.socket.send(b'\n\n{"foo"} 314231234\n{""}\n{"aaa": "foo"}\n')
+        self.socket.send(b'\n')
         resp = self.readline()
         self.assertEqual(json.loads(resp), {"error":
             ERRORS['missing_command']})
+
+        self.socket.send(b'\n\n')
+        for i in range(2):
+            resp = self.readline()
+            self.assertEqual(json.loads(resp), {"error":
+                ERRORS['missing_command']})
+
+        self.socket.send(b'\n\n{"foo"} 314231234\n')
+        for i in range(2): # last message does not parse, no error triggered
+            resp = self.readline()
+            self.assertEqual(json.loads(resp), {"error":
+                ERRORS['missing_command']})
+
+        self.socket.send(b'\n\n{"foo"} 314231234\n{""}\n{"aaa": "foo"}\n')
+        for i in range(3):
+            resp = self.readline()
+            self.assertEqual(json.loads(resp), {"error":
+                ERRORS['missing_command']})
 
     def test_qjson_bug(self):
         self.socket.send(b'{""}\n{"command":"unknown"}\n')
@@ -106,6 +124,14 @@ class BasicTests(TestCellaserv):
 
         resp = self.readline()
         self.assertIn("services", resp)
+
+    def test_big_packet(self):
+        self.socket.send(b'{"command": "server", "action": "' + b'A'*123456 +
+                b'"}\n')
+        resp = self.readline()
+
+        self.assertEqual(json.loads(resp), {'error':
+            "[server-query] No such action"})
 
     def test_command_unknwon(self):
         commands = [
