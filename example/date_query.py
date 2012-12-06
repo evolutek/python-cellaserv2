@@ -14,14 +14,14 @@ class AsynDateQueryClient(cellaserv.client.AsynClientDebug):
         self.set_ack_cb(self.print_time)
 
     def print_time(self, message):
-        print("Time: {}".format(time.ctime(message['ack-data']['epoch'])))
+        print("Time: {}".format(time.ctime(message['data']['epoch'])))
 
 class SynDateQueryClient(cellaserv.client.SynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
     def epoch(self):
-        return self.query('epoch', 'date')
+        return self.query('time', 'date')
 
 def main():
     import asyncore
@@ -41,8 +41,8 @@ def main():
         #client.register_service("test")
         #client.notify({'hello': 'world'}, "test")
         for i in range(10):
-            client.query('epoch', 'date') # request command `epoch` to
-                                          # service `date`
+            client.query('time', 'date') # request command `time` to
+                                         # service `date`
         asyncore.loop()
 
 if __name__ == "__main__":

@@ -257,14 +257,14 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def message_recieved(self, message):
         """Called on incoming message from cellaserv"""
-        if 'ack' in message and self._ack_cb:
-            self._ack_cb(message)
-        elif 'command' in message:
+        if 'command' in message:
             if message['command'] == 'query':
                 self.query_recieved(message)
             elif message['command'] == 'notify':
                 for cb in self._event_cb[message['event']]:
                     cb(message)
+            elif message['command'] == 'ack' and self._ack_cb:
+                self._ack_cb(message)
 
     def query_recieved(self, query):
         pass
