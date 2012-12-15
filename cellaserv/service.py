@@ -78,7 +78,8 @@ class Service(AsynClient):
     @classmethod
     def action(cls, method_or_name):
         """Use the ``Service.action`` decorator to declare the method as
-        callable from cellaserv"""
+        callable from cellaserv."""
+
         def _set_action(method, action):
             try:
                 method._actions.append(action)
@@ -98,6 +99,10 @@ class Service(AsynClient):
 
     @classmethod
     def event(cls, method_or_name):
+        """The method decorated with ``Service.event`` will be called when a
+        event matching its name (or argument passed to ``Service.event``) will
+        be received."""
+
         def _set_event(method, event):
             try:
                 method._events.append(event)
