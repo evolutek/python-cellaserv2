@@ -19,13 +19,14 @@ Example usage:
 """
 import asyncore
 import inspect
+import os
 import socket
 import sys
 import traceback
 
 import cellaserv.client
 
-DEBUG = False
+DEBUG = os.environ.get("CS_DEBUG", False)
 
 if DEBUG:
     AsynClient = cellaserv.client.AsynClientDebug
