@@ -5,7 +5,7 @@ setup(
     version='1',
     url='evolutek.org',
     description='Python client for cellaserv',
-    author='Evolutek',
+    author='Rémi Audebert - Evolutek 2013',
     author_email='mail@halfr.net',
 
     packages = ['cellaserv'],
