@@ -16,8 +16,22 @@ Example usage:
     ...
     >>> s = Foo()
     >>> s.run()
+
+It tries to read the `(HOST, PORT)` configuration from the file called
+`local_settings.py`.
+
+If this file does not exist it tries to read `/etc/conf.d/cellaserv` which as
+the following format::
+
+    [client]
+    host = evolutek.org
+    port = 4200
+
+If this file is not found it defaults to HOST = evolutek.org and PORT = 4200.
 """
+
 import asyncore
+import configparser
 import inspect
 import os
 import socket
@@ -62,8 +76,13 @@ class Service(AsynClient):
             import local_settings
             HOST, PORT = local_settings.HOST, local_settings.PORT
         except:
-            HOST = os.environ.get("CS_HOST", "evolutek.org")
-            PORT = os.environ.get("CS_PORT", 4200)
+            config = configparser.ConfigParser()
+            config.read(['/etc/conf.d/cellaserv'])
+
+            HOST = os.environ.get("CS_HOST",
+                    config.get("client", "host", fallback="evolutek.org"))
+            PORT = int(os.environ.get("CS_PORT",
+                config.get("client", "port", fallback="4200")))
 
         sock = socket.create_connection((HOST, PORT))
 
