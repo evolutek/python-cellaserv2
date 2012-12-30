@@ -62,10 +62,8 @@ class Service(AsynClient):
             import local_settings
             HOST, PORT = local_settings.HOST, local_settings.PORT
         except:
-            print("Could not find 'local_settings.py', "
-                    "using default host:port (evolutek.org:4200)",
-                    file=sys.stderr)
-            HOST, PORT = "evolutek.org", 4200
+            HOST = os.environ.get("CS_HOST", "evolutek.org")
+            PORT = os.environ.get("CS_PORT", 4200)
 
         sock = socket.create_connection((HOST, PORT))
 
