@@ -27,6 +27,8 @@ import uuid
 
 import cellaserv.client
 
+GLOBALS_MAPPING = {"true": True, "false": False, "null": None}
+
 class QueryAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         query = {}
@@ -46,14 +48,13 @@ class QueryAction(argparse.Action):
             for arg in values[1:]:
                 key, value = arg.split('=', 1)
                 try:
-                    data[key]  = eval(value)
+                    data[key] = eval(value, GLOBALS_MAPPING)
                 except:
                     data[key] = value
 
             query['data'] = data
 
         namespace.query = query
-
 
 def main():
     try:
