@@ -4,8 +4,8 @@
 """
 Send a query to cellaserv.
 
-Default server: ``evolutek.org`` port ``4200``, or HOST, PORT values imported
-from ``local_settings.py``
+Default server: ``cellaserv.evolutek.org`` port ``4200``, or HOST, PORT values
+imported from ``local_settings.py``
 
 Example usage::
 
@@ -61,20 +61,20 @@ def main():
         import local_settings
         HOST, PORT = local_settings.HOST, local_settings.PORT
     except:
-        HOST, PORT = 'evolutek.org', 4200
+        HOST, PORT = 'cellaserv.evolutek.org', 4200
 
     parser = argparse.ArgumentParser(description=__doc__,
             formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("-v", "--version", action="version",
+    parser.add_argument("--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)
     parser.add_argument("-s", "--server", default=HOST,
             help="hostname/ip of the server")
     parser.add_argument("-p", "--port", type=int, default=PORT,
             help="port of the server")
-    parser.add_argument("-n", "--non-verbose", action="store_true",
-            help="be less verbose, do no print messages, only return value")
-    parser.add_argument("-P", "--pretty", action="store_true",
+    parser.add_argument("-v", "--verbose", action="store_true",
+            help="be verbose, print all messages")
+    parser.add_argument("-P", "--nopretty", action="store_true",
             help="pretty print output")
     parser.add_argument("query", nargs="+", help="the query sent to cellaserv",
             action=QueryAction)
@@ -82,10 +82,10 @@ def main():
     args = parser.parse_args()
 
     with socket.create_connection((args.server, args.port)) as conn:
-        if args.non_verbose:
-            client = cellaserv.client.SynClient(conn)
-        else:
+        if args.verbose:
             client = cellaserv.client.SynClientDebug(conn)
+        else:
+            client = cellaserv.client.SynClient(conn)
 
         message = args.query
         message['id'] = str(uuid.uuid4())
@@ -94,9 +94,9 @@ def main():
 
         ret_value = client.read_message(message['id'])
 
-        if args.non_verbose:
+        if not args.verbose:
             try:
-                if args.pretty:
+                if not args.nopretty:
                     pprint.pprint(ret_value['data'])
                 else:
                     print(ret_value['data'])
