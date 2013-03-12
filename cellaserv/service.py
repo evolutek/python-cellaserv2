@@ -72,17 +72,7 @@ class Service(AsynClient):
         return super(Service, cls).__new__(cls)
 
     def __init__(self, identification=None):
-        try:
-            import local_settings
-            HOST, PORT = local_settings.HOST, local_settings.PORT
-        except:
-            config = configparser.ConfigParser()
-            config.read(['/etc/conf.d/cellaserv'])
-
-            HOST = os.environ.get("CS_HOST",
-                    config.get("client", "host", fallback="evolutek.org"))
-            PORT = int(os.environ.get("CS_PORT",
-                config.get("client", "port", fallback="4200")))
+        HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
         sock = socket.create_connection((HOST, PORT))
 

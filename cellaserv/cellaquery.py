@@ -25,6 +25,7 @@ import pprint
 import socket
 import uuid
 
+import cellaserv.settings
 import cellaserv.client
 
 GLOBALS_MAPPING = {"true": True, "false": False, "null": None}
@@ -57,11 +58,7 @@ class QueryAction(argparse.Action):
         namespace.query = query
 
 def main():
-    try:
-        import local_settings
-        HOST, PORT = local_settings.HOST, local_settings.PORT
-    except:
-        HOST, PORT = 'cellaserv.evolutek.org', 4200
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
     parser = argparse.ArgumentParser(description=__doc__,
             formatter_class=argparse.RawDescriptionHelpFormatter)

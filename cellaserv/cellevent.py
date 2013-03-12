@@ -25,16 +25,19 @@ import socket
 import subprocess
 import sys
 
+import cellaserv.settings
 import cellaserv.client
 
 def main():
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
+
     parser = argparse.ArgumentParser(description="Subscribe to events from cellaserv.")
     parser.add_argument("-v", "--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)
-    parser.add_argument("-s", "--server", default="evolutek.org",
+    parser.add_argument("-s", "--server", default=HOST,
             help="hostname/ip of the server (default evolutek.org)")
-    parser.add_argument("-p", "--port", type=int, default=4200,
+    parser.add_argument("-p", "--port", type=int, default=PORT,
             help="port of the server (default 4200)")
     parser.add_argument("-n", "--non-verbose", action="store_true",
             help="be less verbose, don't print messages, only data")

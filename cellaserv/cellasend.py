@@ -47,6 +47,7 @@ import pprint
 import socket
 import uuid
 
+import cellaserv.settings
 import cellaserv.client
 
 class AssocAction(argparse.Action):
@@ -70,13 +71,15 @@ class AssocAction(argparse.Action):
             parser.error("{} is not a valid key=value argument".format(values))
 
 def main():
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
+
     parser = argparse.ArgumentParser(description="Send messages to cellaserv")
     parser.add_argument("--version", action="version",
             version="%(prog)s v" + __version__ + ", protocol: v" +
             cellaserv.client.__protocol_version__)
-    parser.add_argument("-s", "--server", default="cellaserv.evolutek.org",
+    parser.add_argument("-s", "--server", default=HOST,
             help="hostname/ip of the server (default cellaserv.evolutek.org)")
-    parser.add_argument("-p", "--port", type=int, default=4200,
+    parser.add_argument("-p", "--port", type=int, default=PORT,
             help="port of the server (default 4200)")
     parser.add_argument("-v", "--verbose", action="store_true",
             help="be verbose, print all messages")
