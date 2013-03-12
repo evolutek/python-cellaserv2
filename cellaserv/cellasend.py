@@ -54,11 +54,11 @@ class AssocAction(argparse.Action):
         namespace.json_dict = {}
         try:
             for assoc in values:
-                key, value = assoc.split('=', maxsplit=1)
+                key, value = assoc.split('=', 1)
 
                 # quick and dirty: .key=stuff <=> msg['data'][key] = stuff
                 if key.startswith('.'):
-                    data_key = key.split('.', maxsplit=1)[1]
+                    data_key = key.split('.', 1)[1]
                     try:
                         namespace.json_dict['data'][data_key] = value
                     except KeyError:
