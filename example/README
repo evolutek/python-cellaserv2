@@ -1,13 +1,11 @@
 In order to make a successful test
-   - Compile cellaserv
-   - run cellaserv
    - run date_service.py
    - run query_date.py
 
-Cellaserv will be the server
+date_service.py connects to cellaserv (host and port located in
+local_settings.py) and wait for any query from other client connected to
+cellaserv.
 
-date_service connect to cellaserv and wait for any
-query from other client connected to cellaserv
-
-query_date connect to cellaserv and send a query requesting the date, cellaserv
-resend the the query to date_service then the answer go through the same path
+query_date.py connects to cellaserv and sends a query requesting the date,
+cellaserv forwards the query to date_service. The answer goes back to
+query_date.py through cellaserv.
