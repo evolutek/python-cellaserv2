@@ -38,6 +38,7 @@ import socket
 import sys
 import traceback
 
+import cellaserv.settings
 import cellaserv.client
 
 DEBUG = os.environ.get("CS_DEBUG", False)
