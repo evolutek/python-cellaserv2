@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='python-cellaserv',
-    version='1',
+    version='2',
     url='evolutek.org',
     description='Python client for cellaserv',
     author='Rémi Audebert - Evolutek 2013',
