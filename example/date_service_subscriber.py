@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import time
 
-import cellaserv.client
+from cellaserv.client import AsynClientDebug
 
-class EpochDelta(cellaserv.client.AsynClientDebug):
+class EpochDelta(AsynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
@@ -23,8 +23,9 @@ if __name__ == "__main__":
     import asyncore
     import socket
 
-    import local_settings
-    HOST, PORT = local_settings.HOST, local_settings.PORT
+    import cellaserv.settings
+
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
     service = EpochDelta(socket.create_connection((HOST, PORT)))
     asyncore.loop()

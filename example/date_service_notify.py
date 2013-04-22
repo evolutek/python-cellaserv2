@@ -3,9 +3,9 @@
 
 import time
 
-import cellaserv.client
+from cellaserv.client import SynClient
 
-class DateNotifier(cellaserv.client.SynClient):
+class DateNotifier(SynClient):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
@@ -16,11 +16,15 @@ class DateNotifier(cellaserv.client.SynClient):
         while not time.sleep(1):
             self.broadcast_time()
 
-if __name__ == '__main__':
+def main():
     import socket
 
-    import local_settings
-    HOST, PORT = local_settings.HOST, local_settings.PORT
+    import cellaserv.settings
+
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
     service = DateNotifier(socket.create_connection((HOST, PORT)))
     service.run()
+
+if __name__ == '__main__':
+    main()

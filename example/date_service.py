@@ -4,9 +4,9 @@
 """
 import time
 
-import cellaserv.client
+from cellaserv.client import AsynClient
 
-class DateService(cellaserv.client.AsynClient):
+class DateService(AsynClient):
 
     def __init__(self, sock, identification=None):
         super().__init__(sock)
@@ -34,9 +34,9 @@ def main():
     import asyncore
     import socket
 
-    import local_settings
+    import cellaserv.settings
 
-    HOST, PORT = local_settings.HOST, local_settings.PORT
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
     with socket.create_connection((HOST, PORT)) as sock:
         service = DateService(sock)

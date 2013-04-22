@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Sample client, (a)synchronous time time from the date service through
-cellaserv
+cellaserv.
 """
 
 import time
 
-import cellaserv.client
+from cellaserv.client import AsynClientDebug, SynClientDebug
 
-class AsynDateQueryClient(cellaserv.client.AsynClientDebug):
+class AsynDateQueryClient(AsynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
@@ -16,7 +16,7 @@ class AsynDateQueryClient(cellaserv.client.AsynClientDebug):
     def print_time(self, message):
         print("Time: {}".format(time.ctime(message['data']['epoch'])))
 
-class SynDateQueryClient(cellaserv.client.SynClientDebug):
+class SynDateQueryClient(SynClientDebug):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
@@ -27,9 +27,9 @@ def main():
     import asyncore
     import socket
 
-    import local_settings
+    import cellaserv.settings
 
-    HOST, PORT = local_settings.HOST, local_settings.PORT
+    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
     with socket.create_connection((HOST, PORT)) as sock:
         client = SynDateQueryClient(sock)
@@ -43,6 +43,7 @@ def main():
         for i in range(10):
             client.query('time', 'date') # request command `time` to
                                          # service `date`
+        print("===> Kill me when you're done. <===")
         asyncore.loop()
 
 if __name__ == "__main__":
