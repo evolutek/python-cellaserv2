@@ -14,6 +14,7 @@ Example usage::
 import socket
 
 import cellaserv.client
+import cellaserv.settings
 
 class ActionProxy:
     """Action proxy for cellaserv."""
@@ -57,10 +58,13 @@ class ServiceProxy:
 class CellaservProxy():
     """Proxy class for cellaserv."""
 
-    def __init__(self, client=None, host="evolutek.org", port=4200):
+    def __init__(self, client=None, host=None, port=None):
         if client:
             self.client = client
         else:
+            host = host if host else cellaserv.settings.HOST
+            port = port if port else cellaserv.settings.PORT
+
             self.socket = socket.create_connection((host, port))
             self.client = cellaserv.client.SynClient(self.socket)
 
