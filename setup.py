@@ -1,11 +1,14 @@
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 setup(
     name='python-cellaserv',
     version='2',
     url='evolutek.org',
     description='Python client for cellaserv',
-    author='Rémi Audebert - Evolutek 2013',
+    author='Remi Audebert - Evolutek 2013',
     author_email='mail@halfr.net',
 
     packages = ['cellaserv'],
