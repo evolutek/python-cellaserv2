@@ -15,7 +15,7 @@ replaces=()
 backup=()
 options=(!emptydirs)
 install=
-source=("https://bitbucket.org/evolutek/$pkgname/get/master.tar.bz2")
+source=("http://code.evolutek.org/releases/$pkgname-$pkgver.tar.xz")
 md5sums=() # makepkg -g
 
 package() {
