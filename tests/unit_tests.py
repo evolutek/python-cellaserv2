@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for cellaserv using the cellaserv_client library
+"""Unit tests for cellaserv using the cellaserv_client library.
 """
 
 import asyncore
@@ -12,6 +12,7 @@ import unittest
 import uuid
 
 import cellaserv.client
+from cellaserv.proxy import CellaservProxy
 from tests import local_settings
 
 from example import date_service
@@ -362,6 +363,15 @@ class TestServer(TestCellaserv):
         self.assertEqual(resp['data']['protocol-version'],
                 cellaserv.client.__protocol_version__)
 
+class TestProxy(TestCellaserv):
+
+    def test_notify(self):
+        cs = CellaservProxy()
+        client = cellaserv.client.SynClient(self.new_socket())
+        client.subscribe_event("test")
+        cs("test")
+        msg = client.read_message()
+        self.assertEqual('test', msg['event'])
 
 if __name__ == "__main__":
     unittest.main()

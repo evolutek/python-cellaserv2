@@ -77,6 +77,8 @@ class CellaservProxy():
     """Proxy class for cellaserv."""
 
     def __init__(self, client=None, host=None, port=None):
+        self.socket = None
+
         if client:
             self.client = client
         else:
@@ -88,3 +90,16 @@ class CellaservProxy():
 
     def __getattr__(self, service_name):
         return ServiceProxy(service_name, self.client)
+
+    def __del__(self):
+        if self.socket:
+            self.socket.close()
+
+    def __call__(self, event, event_data=None):
+        """Send a notify message.
+
+        :param event string: The event name.
+        :param event_data dict: Optional data sent with the event.
+        """
+
+        self.client.notify(event=event, event_data=event_data)
