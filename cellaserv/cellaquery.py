@@ -24,9 +24,18 @@ except ImportError:
 import pprint
 import socket
 import uuid
+import json
 
 import cellaserv.settings
 import cellaserv.client
+
+try:
+    from pygments import highlight
+    from pygments.lexers import JsonLexer
+    from pygments.formatters import Terminal256Formatter
+    HAVE_PYGMENTS = True
+except ImportError:
+    HAVE_PYGMENTS = False
 
 GLOBALS_MAPPING = {"true": True, "false": False, "null": None}
 
@@ -94,7 +103,12 @@ def main():
         if not args.verbose:
             try:
                 if not args.nopretty:
-                    pprint.pprint(ret_value['data'])
+                    if HAVE_PYGMENTS:
+                        print(highlight(json.dumps(ret_value['data'],
+                            sort_keys=True, indent=4), JsonLexer(),
+                            Terminal256Formatter()))
+                    else:
+                        pprint.pprint(ret_value['data'])
                 else:
                     print(ret_value['data'])
             except:

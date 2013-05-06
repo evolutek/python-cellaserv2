@@ -46,9 +46,18 @@ except ImportError:
 import pprint
 import socket
 import uuid
+import json
 
 import cellaserv.settings
 import cellaserv.client
+
+try:
+    from pygments import highlight
+    from pygments.lexers import JsonLexer
+    from pygments.formatters import Terminal256Formatter
+    HAVE_PYGMENTS = True
+except ImportError:
+    HAVE_PYGMENTS = False
 
 class AssocAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -113,7 +122,12 @@ def main():
         if args.nopretty:
             print(client.read_message())
         else:
-            pprint.pprint(client.read_message())
+            if HAVE_PYGMENTS:
+                print(highlight(json.dumps(client.read_message(),
+                    sort_keys=True, indent=4), JsonLexer(),
+                    Terminal256Formatter()))
+            else:
+                pprint.pprint(client.read_message())
 
 if __name__ == "__main__":
     main()
