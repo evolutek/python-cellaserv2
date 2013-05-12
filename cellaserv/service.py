@@ -36,6 +36,7 @@ import inspect
 import os
 import socket
 import sys
+import threading
 import traceback
 
 import cellaserv.settings
@@ -48,6 +49,15 @@ if DEBUG:
 else:
     AsynClient = cellaserv.client.AsynClient
 
+class Variable(threading.Event):
+    def __init__(self, set, clear):
+        super().__init__()
+
+        self._event_set = set
+        self._event_clear = clear
+
+        self.data = {}
+
 class Service(AsynClient):
 
     service_name = None
@@ -56,16 +66,32 @@ class Service(AsynClient):
     version = None
 
     def __new__(cls, *args, **kwargs):
+        def _wrap_set(variable):
+            def _variable_set(self, **kwargs):
+                variable.set()
+                variable.data = kwargs
+            return _variable_set
+
+        def _wrap_clear(variable):
+            def _variable_clear(self, **kwargs):
+                variable.clear()
+                variable.data = kwargs
+            return _variable_clear
+
         _actions = {'version': cls.version}
         _events = {}
 
-        for name, method in inspect.getmembers(cls):
-            if hasattr(method, "_actions"):
-                for action in method._actions:
-                    _actions[action] = method
-            if hasattr(method, "_events"):
-                for event in method._events:
-                    _events[event] = method
+        for name, member in inspect.getmembers(cls):
+            if hasattr(member, "_actions"):
+                for action in member._actions:
+                    _actions[action] = member
+            if hasattr(member, "_events"):
+                for event in member._events:
+                    _events[event] = member
+            if isinstance(member, Variable):
+                _events[member._event_set or name.replace('_', '-')] = _wrap_set(member)
+                if member._event_clear:
+                    _events[member._event_clear] = _wrap_clear(member)
 
         cls._actions = _actions
         cls._events = _events
@@ -128,6 +154,11 @@ class Service(AsynClient):
             return _set_event(method_or_name, event)
         else:
             return _wrapper
+
+    @classmethod
+    def variable(cls, set=None, clear=None):
+        x = Variable(set=set, clear=clear)
+        return x
 
     # Regular methods
 
