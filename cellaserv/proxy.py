@@ -15,9 +15,9 @@ From within a Service::
     >>> from cellaserv.service import Service
     >>> from cellaserv.proxy import CellaservProxy
     >>> class Foo(Service):
-            def __init__(self):
-                super().__init__()
-                self.cs = CellaservProxy(client=self)
+    ...     def __init__(self):
+    ...         super().__init__()
+    ...         self.cs = CellaservProxy(client=self)
 
 .. warning::
 
@@ -95,11 +95,11 @@ class CellaservProxy():
         if self.socket:
             self.socket.close()
 
-    def __call__(self, event, event_data=None):
+    def __call__(self, event, **kwargs):
         """Send a notify message.
 
         :param event string: The event name.
-        :param event_data dict: Optional data sent with the event.
+        :param kwargs dict: Optional data sent with the event.
         """
 
-        self.client.notify(event=event, event_data=event_data)
+        self.client.notify(event=event, event_data=kwargs)
