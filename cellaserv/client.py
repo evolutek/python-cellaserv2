@@ -19,6 +19,9 @@ from collections import defaultdict
 class MessageTimeout(Exception):
     pass
 
+class ErrorMessage(Exception):
+    pass
+
 class BadMessage(Exception):
     pass
 
@@ -153,6 +156,10 @@ class SynClient(AbstractClient):
         if message_id:
             while message_id not in self._messages_waiting:
                 new_message = self._read_single_message()
+
+                if 'error' in new_message:
+                    raise ErrorMessage(new_message)
+
                 try:
                     self._messages_waiting[new_message['id']] = new_message
                 except KeyError as exc:
