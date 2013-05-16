@@ -56,6 +56,17 @@ class ActionProxy:
         except:
             return resp
 
+    # IPython
+
+    def getdoc(self):
+        #import pdb; pdb.set_trace()
+        resp = self.client.query('help-action', to_service=self.service,
+                data={'action': self.action})
+        try:
+            return resp['data']
+        except KeyError:
+            return "No documentation"
+
 class ServiceProxy:
     """Service proxy for cellaserv."""
 
@@ -65,6 +76,9 @@ class ServiceProxy:
         self.identification = None
 
     def __getattr__(self, action):
+        if action.startswith('__') or action in ['getdoc']:
+            return super().__getattr__(action)
+
         action = ActionProxy(action, self.service_name, self.identification,
                 self.client)
         return action
@@ -72,6 +86,15 @@ class ServiceProxy:
     def __getitem__(self, identification):
         self.identification = identification
         return self
+
+    # IPython
+
+    def getdoc(self):
+        resp = self.client.query('help', to_service=self.service_name)
+        try:
+            return resp['data']
+        except KeyError:
+            return "No documentation"
 
 class CellaservProxy():
     """Proxy class for cellaserv."""

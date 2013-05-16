@@ -34,6 +34,7 @@ import asyncore
 import configparser
 import inspect
 import os
+import pydoc
 import socket
 import sys
 import threading
@@ -63,7 +64,6 @@ class Service(AsynClient):
     service_name = None
     identification = None
     variant = "python"
-    version = None
 
     def __new__(cls, *args, **kwargs):
         def _wrap_set(variable):
@@ -78,7 +78,7 @@ class Service(AsynClient):
                 variable.data = kwargs
             return _variable_clear
 
-        _actions = {'version': cls.version}
+        _actions = {}
         _events = {}
 
         for name, member in inspect.getmembers(cls):
@@ -205,13 +205,23 @@ class Service(AsynClient):
 
     # Default actions
 
-    def version(self):
-        ret = {}
-        if self.version:
-            ret['version'] = self.version
-        if self.variant:
-            ret['variant'] = self.variant
-        return ret or None
+    def help(self):
+        doc = []
+        for name, f in self._actions.items():
+            doc.append(f.__doc__ or ''.join(pydoc.render_doc(f,
+                title='%s').splitlines()[2:]))
+
+        return '\n'.join(doc)
+    help._actions = ['help']
+
+    def help_action(self, action):
+        try:
+            f = self._actions[action]
+            return f.__doc__ or ''.join(pydoc.render_doc(f,
+                title="%s").splitlines()[2:])
+        except KeyError:
+            return "No such action"
+    help_action._actions = ['help-action']
 
     # Convenience methods
 
