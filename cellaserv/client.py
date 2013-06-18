@@ -8,7 +8,6 @@ Sample usage is provided in the ``example/`` folder of the source distribution.
 """
 
 __version__ = "1"
-__protocol_version__ = "1"
 
 import asynchat
 import json
@@ -131,10 +130,6 @@ class SynClient(AbstractClient):
         self._socket = sock
         self._buffer = sock.makefile()
         self._messages_waiting = {}
-
-        resp = self.server('protocol-version')
-        if resp['data']['protocol-version'] != __protocol_version__:
-            print("Warning: Version mismatch between client and server.")
 
     def _send_message(self, message, *args, **kwargs):
         data = json.dumps(message).encode('ascii')

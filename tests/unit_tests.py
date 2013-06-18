@@ -475,18 +475,6 @@ class TestServer(TestCellaserv):
         self.assertEqual(resp['data']['connections-open'] + 1,
                 resp2['data']['connections-open'])
 
-    def test_cellaserv_version(self):
-        client = cellaserv.client.SynClient(self.new_socket())
-        resp = client.server('cellaserv-version')
-
-        self.assertEqual(type(resp['data']['cellaserv-version']), str)
-
-    def test_version(self):
-        client = cellaserv.client.SynClient(self.new_socket())
-        resp = client.server('protocol-version')
-        self.assertEqual(resp['data']['protocol-version'],
-                cellaserv.client.__protocol_version__)
-
 class TestProxy(TestCellaserv):
 
     def test_notify(self):

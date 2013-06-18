@@ -10,14 +10,10 @@ Default server: ``cellaserv.evolutek.org`` port ``4200``.
 Example usage::
 
     $ cellasend command=query service=date action=epoch -v
-    >> {"action": "protocol-version", "id": "1dacff38-5511-436f-9bea-8acc6158dafc", "command": "server"}
-    << {"data": {"protocol-version": "0.5"}, "id": "1dacff38-5511-436f-9bea-8acc6158dafc", "command": "ack"}
     >> {"action": "epoch", "service": "date", "id": "0934ddd9-6ab6-426f-8105-0e92d477ef8c", "command": "query"}
     << {"ack-data": {"epoch": 1352746477}, "id": "0934ddd9-6ab6-426f-8105-0e92d477ef8c", "command": "ack"}
 
     $ cellasend command=server action=list-services -v
-    >> {"id": "8d6cc9cd-39d4-4fd0-af19-1ff2056bcf14", "action": "protocol-version", "command": "server"}
-    << {"id": "8d6cc9cd-39d4-4fd0-af19-1ff2056bcf14", "data": {"protocol-version": "0.5"}, "command": "ack"}
     >> {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "action": "list-services", "command": "server"}
     << {"id": "8e6991c3-6157-489a-8472-1094e9f9e852", "data": {"services": []}, "command": "ack"}
 
@@ -84,8 +80,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Send messages to cellaserv")
     parser.add_argument("--version", action="version",
-            version="%(prog)s v" + __version__ + ", protocol: v" +
-            cellaserv.client.__protocol_version__)
+            version="%(prog)s v" + __version__)
     parser.add_argument("-s", "--server", default=HOST,
             help="hostname/ip of the server (default cellaserv.evolutek.org)")
     parser.add_argument("-p", "--port", type=int, default=PORT,
