@@ -20,10 +20,6 @@ from example import date_service_notify
 
 HOST, PORT = local_settings.HOST, local_settings.PORT
 
-ERRORS = {
-        "missing_command": "Message missing 'command' component",
-}
-
 class TestCellaserv(unittest.TestCase):
 
     @classmethod
@@ -89,32 +85,51 @@ class BasicTests(TestCellaserv):
     def test_complete_gibberish(self):
         self.socket.send(b'\n')
         resp = self.readline()
-        self.assertEqual(json.loads(resp), {"error":
-            ERRORS['missing_command']})
+        self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error': 'command', 'error-id': 'missing-field'})
 
         self.socket.send(b'\n\n')
         for i in range(2):
             resp = self.readline()
-            self.assertEqual(json.loads(resp), {"error":
-                ERRORS['missing_command']})
+            self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error': 'command', 'error-id': 'missing-field'})
 
         self.socket.send(b'\n\n{"foo"} 314231234\n')
         for i in range(2): # last message does not parse, no error triggered
             resp = self.readline()
-            self.assertEqual(json.loads(resp), {"error":
-                ERRORS['missing_command']})
+            self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error': 'command', 'error-id': 'missing-field'})
+
+        resp = self.readline()
+        self.assertEqual(json.loads(resp),
+            {'command': 'error', 'error': '', 'error-id': 'bad-json'})
 
         self.socket.send(b'\n\n{"foo"} 314231234\n{""}\n{"aaa": "foo"}\n')
-        for i in range(3):
+
+        for i in range(2):
             resp = self.readline()
-            self.assertEqual(json.loads(resp), {"error":
-                ERRORS['missing_command']})
+            self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error': 'command', 'error-id': 'missing-field'})
+
+        for i in range(2):
+            resp = self.readline()
+            self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error': '', 'error-id': 'bad-json'})
+
+        resp = self.readline()
+        self.assertEqual(json.loads(resp),
+            {'command': 'error', 'error': 'command', 'error-id': 'missing-field'})
 
     def test_qjson_bug(self):
         self.socket.send(b'{""}\n{"command":"unknown"}\n')
+
         resp = self.readline()
-        self.assertEqual(json.loads(resp), {'error':
-            "unknown command: 'unknown'"})
+        self.assertEqual(json.loads(resp),
+            {'command': 'error', 'error': '', 'error-id': 'bad-json'})
+
+        resp = self.readline()
+        self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error': 'unknown', 'error-id': 'no-such-command'})
 
     def test_partial_packet(self):
         self.socket.send(b'{"command"')
@@ -131,23 +146,8 @@ class BasicTests(TestCellaserv):
                 b'"}\n')
         resp = self.readline()
 
-        self.assertEqual(json.loads(resp), {'error':
-            "[server-query] No such action"})
-
-    def test_command_unknwon(self):
-        commands = [
-                {},
-                {"lol": 1},
-                {"foo": "bar"},
-                {"foo": {"hello": "bite"}},
-                ["hello", "test"],
-        ]
-
-        for command in commands:
-            self.send_command(command)
-            resp = self.readline()
-            self.assertEqual(json.loads(resp), {"error":
-                ERRORS['missing_command']})
+        self.assertEqual(json.loads(resp),
+                {'command': 'error', 'error-id': 'no-such-action', 'error': 'A'*123456})
 
     def test_command_register_service(self):
         command = {"command": "register",
@@ -187,6 +187,130 @@ class BasicTests(TestCellaserv):
 
         status = client.server('list-services')
         self.assertEqual(len(status['data']['services']), before+100)
+
+    # Basic errors
+
+    def test_command_unknwon(self):
+        commands = [
+                {},
+                {"lol": 1},
+                {"foo": "bar"},
+                {"foo": {"hello": "bite"}},
+                ["hello", "test"],
+        ]
+
+        for command in commands:
+            self.send_command(command)
+            resp = self.readline()
+            self.assertEqual(json.loads(resp),
+                    {'command': 'error', 'error': 'command', 'error-id': 'missing-field'})
+
+    def test_command_register(self):
+        self.send_command({'command': 'register'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'id', 'error-id': 'missing-field'})
+
+        self.send_command({'command': 'register', 'id': '42'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'missing-field'})
+
+        self.send_command(
+                {'command': 'register', 'id': '42', 'service': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+        # XXX: Should fail
+        #self.send_command(
+        #        {'command': 'register', 'id': '42', 'service': 42})
+        #self.assertEqual(json.loads(self.readline()),
+        #        {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+        #self.send_command(
+        #        {'command': 'register', 'id': '42', 'service': False})
+        #self.assertEqual(json.loads(self.readline()),
+        #        {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+        self.send_command(
+                {'command': 'register', 'id': '42', 'service':
+                    {'hello': 'world'}})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+    def test_command_action(self):
+        self.send_command({'command': 'query'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'id', 'error-id': 'missing-field'})
+
+        self.send_command({'command': 'query', 'id': '42'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'missing-field'})
+
+        self.send_command(
+                {'command': 'query', 'id': '42', 'service': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'action', 'error-id': 'missing-field'})
+
+        self.send_command(
+                {'command': 'query', 'id': '42', 'action': 'foo', 'service': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+        self.send_command(
+                {'command': 'query', 'id': '42', 'action': [1, 2, 3], 'service': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+        self.send_command(
+                {'command': 'query', 'id': '42', 'action': {'h': 'w'}, 'service': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+        self.send_command(
+                {'command': 'query', 'id': '42', 'service': {'hello':
+                    'world'}, 'action': {'h': 'w'}})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+
+    def test_command_subscribe(self):
+        self.send_command({'command': 'subscribe'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'event', 'error-id': 'missing-field'})
+
+        self.send_command({'command': 'subscribe', 'id': '42'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'event', 'error-id': 'missing-field'})
+
+        self.send_command(
+                {'command': 'subscribe', 'id': '42', 'event': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'event', 'error-id': 'invalid-field'})
+
+    def test_command_notify(self):
+        self.send_command({'command': 'notify'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'event', 'error-id': 'missing-field'})
+
+        self.send_command({'command': 'notify', 'event': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'event', 'error-id': 'invalid-field'})
+
+    def test_command_ack(self):
+        self.send_command({'command': 'ack'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'id', 'error-id': 'missing-field'})
+
+    def test_command_server(self):
+        self.send_command({'command': 'server'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'action', 'error-id': 'missing-field'})
+
+        self.send_command({'command': 'server', 'action': [1, 2, 3]})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'action', 'error-id': 'invalid-field'})
+
+        self.send_command({'command': 'server', 'action': 'foobarlol'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'foobarlol', 'error-id': 'no-such-action'})
 
 class TestTimeout(TestCellaserv):
 
