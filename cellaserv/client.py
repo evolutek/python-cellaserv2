@@ -162,7 +162,8 @@ class SynClient(AbstractClient):
 
             message = self._messages_waiting.pop(message_id)
 
-            if message['command'] == 'timeout':
+            if (message['command'] == 'error'
+                and message['error-id'] == 'timeout'):
                 raise MessageTimeout(message_id)
 
             return message
