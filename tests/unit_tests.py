@@ -143,11 +143,12 @@ class BasicTests(TestCellaserv):
 
     def test_big_packet(self):
         self.socket.send(b'{"command": "server", "action": "' + b'A'*123456 +
-                b'"}\n')
+                b'", "id": "42"}\n')
         resp = self.readline()
 
         self.assertEqual(json.loads(resp),
-                {'command': 'error', 'error-id': 'no-such-action', 'error': 'A'*123456})
+                {'command': 'error', 'error-id': 'no-such-action',
+                    'error': 'A'*123456, 'id': '42'})
 
     def test_command_register_service(self):
         command = {"command": "register",
@@ -212,12 +213,14 @@ class BasicTests(TestCellaserv):
 
         self.send_command({'command': 'register', 'id': '42'})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'missing-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'missing-field', 'id': '42'})
 
         self.send_command(
                 {'command': 'register', 'id': '42', 'service': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'invalid-field', 'id': '42'})
 
         # XXX: Should fail
         #self.send_command(
@@ -234,7 +237,8 @@ class BasicTests(TestCellaserv):
                 {'command': 'register', 'id': '42', 'service':
                     {'hello': 'world'}})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'invalid-field', 'id': '42'})
 
     def test_command_action(self):
         self.send_command({'command': 'query'})
@@ -243,33 +247,39 @@ class BasicTests(TestCellaserv):
 
         self.send_command({'command': 'query', 'id': '42'})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'missing-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'missing-field', 'id': '42'})
 
         self.send_command(
                 {'command': 'query', 'id': '42', 'service': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'action', 'error-id': 'missing-field'})
+                {'command': 'error', 'error': 'action', 'error-id':
+                    'missing-field', 'id': '42'})
 
         self.send_command(
                 {'command': 'query', 'id': '42', 'action': 'foo', 'service': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'invalid-field', 'id': '42'})
 
         self.send_command(
                 {'command': 'query', 'id': '42', 'action': [1, 2, 3], 'service': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'invalid-field', 'id': '42'})
 
         self.send_command(
                 {'command': 'query', 'id': '42', 'action': {'h': 'w'}, 'service': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'invalid-field', 'id': '42'})
 
         self.send_command(
                 {'command': 'query', 'id': '42', 'service': {'hello':
                     'world'}, 'action': {'h': 'w'}})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'service', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'service', 'error-id':
+                    'invalid-field', 'id': '42'})
 
     def test_command_subscribe(self):
         self.send_command({'command': 'subscribe'})
@@ -302,15 +312,21 @@ class BasicTests(TestCellaserv):
     def test_command_server(self):
         self.send_command({'command': 'server'})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'action', 'error-id': 'missing-field'})
+                {'command': 'error', 'error': 'id', 'error-id': 'missing-field'})
 
         self.send_command({'command': 'server', 'action': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'action', 'error-id': 'invalid-field'})
+                {'command': 'error', 'error': 'id', 'error-id': 'missing-field'})
 
-        self.send_command({'command': 'server', 'action': 'foobarlol'})
+        self.send_command({'command': 'server', 'id': '42', 'action': [1, 2, 3]})
         self.assertEqual(json.loads(self.readline()),
-                {'command': 'error', 'error': 'foobarlol', 'error-id': 'no-such-action'})
+                {'command': 'error', 'error': 'action', 'error-id':
+                    'invalid-field', 'id': '42'})
+
+        self.send_command({'command': 'server', 'id': '42', 'action': 'foobarlol'})
+        self.assertEqual(json.loads(self.readline()),
+                {'command': 'error', 'error': 'foobarlol', 'error-id':
+                    'no-such-action', 'id': '42'})
 
 class TestTimeout(TestCellaserv):
 
