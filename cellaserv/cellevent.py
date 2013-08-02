@@ -13,7 +13,7 @@ Example usage::
     $ cellevent timer-done -S beep
 """
 
-__version__ = "0.1"
+__version__ = "1"
 
 try:
     import argparse
@@ -33,8 +33,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Subscribe to events from cellaserv.")
     parser.add_argument("-v", "--version", action="version",
-            version="%(prog)s v" + __version__ + ", protocol: v" +
-            cellaserv.client.__protocol_version__)
+            version="%(prog)s v" + __version__)
     parser.add_argument("-s", "--server", default=HOST,
             help="hostname/ip of the server (default evolutek.org)")
     parser.add_argument("-p", "--port", type=int, default=PORT,

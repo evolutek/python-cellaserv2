@@ -72,8 +72,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
             formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--version", action="version",
-            version="%(prog)s v" + __version__ + ", protocol: v" +
-            cellaserv.client.__protocol_version__)
+            version="%(prog)s v" + __version__)
     parser.add_argument("-s", "--server", default=HOST,
             help="hostname/ip of the server")
     parser.add_argument("-p", "--port", type=int, default=PORT,
