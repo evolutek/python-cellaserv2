@@ -63,7 +63,6 @@ class Service(AsynClient):
 
     service_name = None
     identification = None
-    variant = "python"
 
     def __new__(cls, *args, **kwargs):
         def _wrap_set(variable):
