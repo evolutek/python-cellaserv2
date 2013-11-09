@@ -7,9 +7,10 @@ setup(
     description='Python client for cellaserv',
     author='Remi Audebert - Evolutek 2013',
     author_email='mail@halfr.net',
+    install_requires=['pygments'],
 
-    packages = ['cellaserv'],
-    entry_points = {
+    packages=['cellaserv'],
+    entry_points={
         'console_scripts': [
             'cellasend = cellaserv.cellasend:main',
             'cellaquery = cellaserv.cellaquery:main',
@@ -17,5 +18,5 @@ setup(
             ]
         },
 
-    test_suite = 'tests.unit_tests',
+    test_suite='tests.unit_tests',
 )
