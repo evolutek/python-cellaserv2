@@ -1,3 +1,8 @@
+Requirements:
+
+    setuptools
+    google-protobuf with python3 support, eg. https://github.com/malthe/google-protobuf
+
 Run:
 
     $ python3 setup.py build
