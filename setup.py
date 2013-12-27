@@ -9,7 +9,7 @@ setup(
     author_email='contact@halfr.net',
     install_requires=['pygments'],
 
-    packages=['cellaserv'],
+    packages=['cellaserv', 'cellaserv.protobuf'],
 
     test_suite='tests.unit_tests',
 )

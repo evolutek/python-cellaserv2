@@ -13,7 +13,7 @@ import struct
 
 from collections import defaultdict
 
-from protobuf.cellaserv_pb2 import (
+from cellaserv.protobuf.cellaserv_pb2 import (
         Message,
         Register,
         Request,
@@ -170,7 +170,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def __init__(self, sock):
         # Init base classes
-        async_chat.async_chat().__init__(sock=sock)
+        asynchat.async_chat.__init__(self, sock=sock)
         AbstractClient.__init__(self)
 
         # setup asynchat
@@ -182,7 +182,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         # map events to a list of callbacks
         self._events_cb = defaultdict(list)
 
-    def _send_message(self, message, *args, **kwargs):
+    def _send_message(self, msg, *args, **kwargs):
         # 'push' is asynchat version of socket.send
         self.push(struct.pack("!I", len(msg)))
         self.push(msg)
