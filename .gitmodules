@@ -1,0 +1,3 @@
+[submodule "cellaserv/protobuf"]
+	path = cellaserv/protobuf
+	url = ssh://git@bitbucket.org/halfr/gocellaserv-protobuf
