@@ -13,6 +13,8 @@ import struct
 
 from collections import defaultdict
 
+from google.protobuf.text_format import MessageToString
+
 from cellaserv.protobuf.cellaserv_pb2 import (
         Message,
         Register,
@@ -22,16 +24,9 @@ from cellaserv.protobuf.cellaserv_pb2 import (
         Subscribe
 )
 
-from google.protobuf.text_format import MessageToString
+from cellaserv.settings import DEBUG
 
-class MessageTimeout(Exception):
-    pass
-
-class ErrorMessage(Exception):
-    pass
-
-class BadMessage(Exception):
-    pass
+logging.basicConfig(level=logging.DEBUG if DEBUG != 0 else logging.INFO)
 
 class AbstractClient:
     """Abstract client. Send protobuf messages."""
@@ -41,6 +36,8 @@ class AbstractClient:
         self._request_seq_id = 0
 
     def send_message(self, msg, *args, **kwargs):
+        logging.debug("Sending: %s", msg)
+
         self._send_message(msg.SerializeToString(), *args, **kwargs)
 
     def _send_message(self, *args, **kwargs):
