@@ -47,6 +47,28 @@ class AbstractClient:
         """Implementation specific method for sending messages."""
         raise NotImplementedError
 
+    def reply_to(self, req, data=None):
+        reply = Reply()
+        reply.id = req.id
+        if data:
+            reply.data = data
+        msg = Message()
+        msg.type = Message.Reply
+        msg.content = reply.SerializeToString()
+        self.send_message(msg)
+
+    def reply_error_to(self, req, error_type, what=None):
+        reply = Reply()
+        reply.id = req.id
+        reply.error = Reply.Error()
+        reply.error.type = error_type
+        if what:
+            reply.error.what = what
+        msg = Message()
+        msg.type = Message.Reply
+        msg.content = reply.SerializeToString()
+        self.send_message(msg)
+
     ### Actions
 
     def register(self, name, identification=None, *args, **kwargs):
