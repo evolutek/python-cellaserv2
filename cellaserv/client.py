@@ -151,36 +151,33 @@ class SynClient(AbstractClient):
 
         while True:
             # Receive message header
-            hdr = bytearray()
-            hdr_remaining = 4 # == struct.calcsize("I") == sizeof (uint32)
-            while hdr_remaining != 0:
-                recv_len = self._socket.recv_into(hdr, hdr_remaining)
-                hdr_remaining -= recv_len
+            hdr = self._socket.recv(4)
             # Header is the size of the message as a uint32 in network byte order
-            msg_len = struct.unpack("!I", hdr)
+            msg_len = struct.unpack("!I", hdr)[0]
 
             # Receive message
-            msg = bytearray()
-            msg_remaining = msg_len
-            while msg_remaining != 0:
-                recv_len = self._socket.recv_into(msg, msg_remaining)
-                msg_remaining -= recv_len
+            msg = self._socket.recv(msg_len)
 
             # Parse message
             message = Message()
             message.ParseFromString(msg)
             if message.type != Message.Reply:
-                logging.warning("Received a non Reply message, dropping:")
-                logging.warning(MessageToString(message))
+                logging.warning("[Request] Dropping non Reply:")
+                logging.warning(message)
                 continue
 
-            reply = Reply
+            reply = Reply()
             reply.ParseFromString(message.content)
             if reply.id != req_id:
-                logging.warning(
-                    "Received a Reply for the wrong Request, dropping:")
-                logging.warning(MessageToString(reply))
+                logging.warning("[Request] Dropping Reply for the wrong Request")
+                logging.warning(reply)
                 continue
+            if reply.HasField('error'):
+                logging.error("[Request] Received error:")
+                logging.error(reply)
+                return None
+
+            logging.debug("Received: %s", reply)
 
             return reply.data
 
@@ -218,7 +215,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         if self._read_header:
             self._read_header = False
 
-            msg_len = struct.unpack("!I", self._ibuffer)
+            msg_len = struct.unpack("!I", self._ibuffer)[0]
             self.set_terminator(msg_len)
 
             self._ibuffer.clear()
@@ -227,11 +224,11 @@ class AsynClient(asynchat.async_chat, AbstractClient):
             self.set_terminator(4)
 
             msg = Message()
-            msg.ParseFromString(self._ibuffer)
+            msg.ParseFromString(bytes(self._ibuffer))
 
             self._ibuffer.clear()
 
-            self._message_recieved(msg)
+            self.on_message_recieved(msg)
 
     # Methods called by subclasses
 
@@ -246,11 +243,11 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         if msg.type == Message.Request:
             req = Request()
             req.ParseFromString(msg.content)
-            self.recieved_request(req)
+            self.on_request(req)
         elif msg.type == Message.Reply:
             rep = Reply()
             rep.ParseFromString(msg.content)
-            self.received_reply(rep)
+            self.on_reply(rep)
         elif msg.type == Message.Publish:
             pub = Publish()
             pub.ParseFromString(msg.content)
