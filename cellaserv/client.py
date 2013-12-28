@@ -234,6 +234,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def add_subscribe_cb(self, event, event_cb):
         """On event ``event`` recieved, call ``event_cb``"""
+        self.subscribe(event)
         self._events_cb[event].append(event_cb)
 
     # Callbacks

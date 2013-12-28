@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Use the cellaserv module to send notify every second"""
+"""Use the cellaserv client to send publish every second."""
 
 import time
 
 from cellaserv.client import SynClient
 
-class DateNotifier(SynClient):
+class DatePublisher(SynClient):
     def __init__(self, sock):
         super().__init__(sock=sock)
 
     def broadcast_time(self):
-        self.notify('epoch', str(time.time()))
+        self.publish('time', str(time.time()).encode("utf8"))
 
     def run(self):
         while not time.sleep(1):
@@ -23,8 +23,9 @@ def main():
 
     HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
 
-    service = DateNotifier(socket.create_connection((HOST, PORT)))
-    service.run()
+    with socket.create_connection((HOST, PORT)) as sock:
+        service = DatePublisher(sock)
+        service.run()
 
 if __name__ == '__main__':
     main()
