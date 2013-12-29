@@ -1,5 +1,5 @@
 """
-Service allows you to write cellaserv services with high-level decorators :
+Service allows you to write cellaserv services with high-level decorators:
 Service.action and Service.event.
 
 Example usage:
@@ -11,8 +11,8 @@ Example usage:
     ...         print("bar")
     ...
     ...     @Service.event
-    ...     def bar(self):
-    ...         print("bar")
+    ...     def on_foo(self):
+    ...         print("foo")
     ...
     >>> s = Foo()
     >>> s.run()
@@ -33,7 +33,8 @@ If this file is not found it defaults to HOST = evolutek.org and PORT = 4200.
 import asyncore
 import configparser
 import inspect
-import os
+import json
+import logging
 import pydoc
 import socket
 import sys
@@ -41,23 +42,36 @@ import threading
 import traceback
 
 import cellaserv.settings
-import cellaserv.client
+from cellaserv.client import AsynClient
 
-DEBUG = os.environ.get("CS_DEBUG", False)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if cellaserv.settings.DEBUG >= 1 else logging.INFO)
 
-if DEBUG:
-    AsynClient = cellaserv.client.AsynClientDebug
-else:
-    AsynClient = cellaserv.client.AsynClient
+def _request_to_string(req):
+    return "{r.service_name}[{r.service_identification}].{r.method}({r.data}) #{r.id}".format(r=req)
 
 class Variable(threading.Event):
+    """Variables help you share data and states between services.
+
+    Example::
+
+        >>> from cellaserv.service import Service, Variable
+        >>> class Timer(Service):
+        ...     t = Variable()
+        ...     ...
+    """
+
     def __init__(self, set, clear):
+        """:param set str: Event that sets the variable
+        :param clear str: Event that clears the variable
+        """
         super().__init__()
+
+        self.name = "?"
+        self.data = {}
 
         self._event_set = set
         self._event_clear = clear
-
-        self.data = {}
 
 class Service(AsynClient):
 
@@ -65,14 +79,19 @@ class Service(AsynClient):
     identification = None
 
     def __new__(cls, *args, **kwargs):
-        def _wrap_set(variable):
+        """Metaprogramming magic."""
+
+        def _var_wrap_set(variable):
             def _variable_set(self, **kwargs):
+                logger.debug("Varable %s set, data=%s", variable.name, kwargs)
                 variable.set()
                 variable.data = kwargs
             return _variable_set
 
-        def _wrap_clear(variable):
+        def _var_wrap_clear(variable):
             def _variable_clear(self, **kwargs):
+                logger.debug("Varable %s cleared, data=%s", variable.name,
+                             kwargs)
                 variable.clear()
                 variable.data = kwargs
             return _variable_clear
@@ -88,9 +107,9 @@ class Service(AsynClient):
                 for event in member._events:
                     _events[event] = member
             if isinstance(member, Variable):
-                _events[member._event_set or name.replace('_', '-')] = _wrap_set(member)
-                if member._event_clear:
-                    _events[member._event_clear] = _wrap_clear(member)
+                member.name = name
+                _events[member._event_set or name] = _var_wrap_set(member)
+                _events[member._event_clear or name + "_clear"] = _var_wrap_clear(member)
 
         cls._actions = _actions
         cls._events = _events
@@ -104,15 +123,14 @@ class Service(AsynClient):
 
         super().__init__(sock)
 
-        if not self.identification:
-            self.identification = identification
+        self.identification = identification or self.identification
 
     # Decorators
 
     @classmethod
     def action(cls, method_or_name):
         """Use the ``Service.action`` decorator to declare the method as
-        callable from cellaserv."""
+        exported to cellaserv."""
 
         def _set_action(method, action):
             try:
@@ -126,8 +144,7 @@ class Service(AsynClient):
             return _set_action(method, method_or_name)
 
         if callable(method_or_name):
-            action = method_or_name.__name__.replace("_", "-")
-            return _set_action(method_or_name, action)
+            return _set_action(method_or_name, method_or_name.__name__)
         else:
             return _wrapper
 
@@ -149,78 +166,87 @@ class Service(AsynClient):
             return _set_event(method, method_or_name)
 
         if callable(method_or_name):
-            event = method_or_name.__name__.replace("_", "-")
-            return _set_event(method_or_name, event)
+            return _set_event(method_or_name, method_or_name.__name__)
         else:
             return _wrapper
 
+    # Protocol helpers
+
     @classmethod
-    def variable(cls, set=None, clear=None):
-        x = Variable(set=set, clear=clear)
-        return x
+    def _decode_data(cls, msg):
+        if msg.HasField('data'):
+            # We assume json formatted data
+            txt = msg.data.decode('utf8')
+            return json.loads(txt)
+        else:
+            return {}
+
 
     # Regular methods
 
-    def query_recieved(self, query):
-        action = query['action']
+    def on_request(self, req):
+        if (req.HasField('service_identification')
+            and req.service_identification != self.identification):
+            logger.warning("Dropping request for wrong identification")
+            return
 
-        if 'identification' in query and \
-                query['identification'] != self.identification:
-                    return
-
-        ack = {}
-        ack['command'] = 'ack'
-        ack['id'] = query['id']
+        method = req.method
 
         try:
-            callback = self._actions[action]
+            callback = self._actions[method]
         except KeyError:
-            ack['data'] = {'error': "unknown action: '{}'".format(action)}
-            self.send_message(ack)
-            return
-        except TypeError:
-            ack['data'] = {'error': "bad action type: '{}' of type {}".format(
-                action,
-                type(action))}
-            self.send_message(ack)
+            logger.error("No such method: %s.%s", method, self)
+            self.reply_error_to(req, cellaserv.client.Reply.Error.NoSuchMethod,
+                                method)
             return
 
         try:
-            if 'data' in query:
-                ack_data = callback(self, **query['data'])
-            else:
-                ack_data = callback(self)
-
-            if ack_data is not None:
-                ack['data'] = ack_data
+            data = self._decode_data(req)
         except Exception as e:
-            traceback.print_exc(file=sys.stderr)
-
-            ack['data'] = str(e)
-            self.send_message(ack)
+            logger.error("Bad arguments formatting: %s",
+                         _request_to_string(req), exc_info=True)
+            self.reply_error_to(req,
+                cellaserv.client.Reply.Error.BadArguments, req.data)
             return
 
-        self.send_message(ack)
+
+        try:
+            reply_data = callback(self, **data)
+            logger.debug("%s[%s].%s(%s) = %s",
+                    self.service_name, self.identification, method, data,
+                    reply_data)
+            if reply_data is not None:
+                reply_data = json.dumps(reply_data).encode("utf8")
+        except Exception as e:
+            logger.error("Exception during %s", _request_to_string(req),
+                         exc_info=True)
+            self.reply_error_to(req, cellaserv.client.Reply.Error.Custom,
+                                json.dumps(str(e)))
+            return
+
+        self.reply_to(req, reply_data)
 
     # Default actions
 
     def help(self):
+        """List exported actions."""
         doc = []
         for name, f in self._actions.items():
             doc.append(f.__doc__ or ''.join(pydoc.render_doc(f,
                 title='%s').splitlines()[2:]))
 
-        return '\n'.join(doc)
+        return '\n'.join(doc).encode("utf8")
     help._actions = ['help']
 
     def help_action(self, action):
+        """Returns the docstring of the method ``action``."""
         try:
             f = self._actions[action]
-            return f.__doc__ or ''.join(pydoc.render_doc(f,
-                title="%s").splitlines()[2:])
         except KeyError:
-            return "No such action"
-    help_action._actions = ['help-action']
+            return b"No such action"
+        return f.__doc__ or ''.join(pydoc.render_doc(f,
+            title="%s").splitlines()[2:])
+    help_action._actions = ['help_action']
 
     # Convenience methods
 
@@ -228,24 +254,24 @@ class Service(AsynClient):
         """Use this if you want to setup multiple service before running
         ``Service.loop()``."""
 
-        def _wrap(fun):
-            def wrap(msg):
-                if 'data' in msg:
-                    fun(self, **msg['data'])
+        def _event_wrap(fun):
+            def _wrap(data=None):
+                if data:
+                    kwargs = json.loads(data.decode("utf8"))
                 else:
-                    fun(self)
-            return wrap
+                    kwargs = {}
+                logger.debug("Publish calls: %s(%s)", fun, kwargs)
+                # FIXME: Handle bad kwargs format
+                fun(self, **kwargs)
+            return _wrap
 
-        if self.service_name:
-            service_name = self.service_name
-        else:
-            service_name = self.__class__.__name__.lower()
+        if not self.service_name:
+            self.service_name = self.__class__.__name__.lower()
 
-        self.register_service(service_name, self.identification)
+        self.register(self.service_name, self.identification)
 
         for event_name, callback in self._events.items():
-            self.subscribe_event(event_name)
-            self.connect_event(event_name, _wrap(callback))
+            self.add_subscribe_cb(event_name, _event_wrap(callback))
 
     def run(self):
         """One-shot to setup and start the service."""

@@ -24,48 +24,51 @@ From within a Service::
     Using the Service as client for the proxy can be misleading.
 
     Service is a subclass of AsynClient, call to cs.service.action() will
-    return the ``ack`` id of the message, not the actual response. If you want
-    to have it, you must use a SynClient (wich is what is used if
+    return the ``request`` id of the message, not the actual response. If you
+    want to have it, you must use a SynClient (wich is what is used if
     CellaservProxy is not created with a ``client`` argument).
 """
 
+import json
+import logging
 import socket
 
 import cellaserv.client
 import cellaserv.settings
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if cellaserv.settings.DEBUG >= 1 else logging.INFO)
+
 class ActionProxy:
     """Action proxy for cellaserv."""
 
     def __init__(self, action, service, identification, client):
-        self.action = action.replace('_', '-')
+        self.action = action
         self.service = service
         self.identification = identification
         self.client = client
 
     def __call__(self, **data):
-        if self.identification:
-            resp = self.client.query(self.action, to_service=self.service,
-                    to_identification=self.identification, data=data)
+        raw_data = self.client.request(self.action,
+                                       service=self.service,
+                                       identification=self.identification,
+                                       data=json.dumps(data).encode("utf8"))
+        if raw_data is not None:
+            ret = json.loads(raw_data.decode("utf8"))
         else:
-            resp = self.client.query(self.action, to_service=self.service,
-                    data=data)
-
-        try:
-            return resp['data']
-        except:
-            return resp
+            ret = None
+        logger.debug("%s[%s].%s(%s) = %s", self.service, self.identification,
+                self.action, data, ret)
+        return ret
 
     # IPython
 
     def getdoc(self):
-        #import pdb; pdb.set_trace()
-        resp = self.client.query('help-action', to_service=self.service,
-                data={'action': self.action})
-        try:
-            return resp['data']
-        except KeyError:
-            return "No documentation"
+        raw_data = self.client.request('help_action',
+                                       service=self.service,
+                                       data=json.dumps(
+                                           {'action': self.action}))
+        return raw_data.decode("utf8")
 
 class ServiceProxy:
     """Service proxy for cellaserv."""
@@ -90,11 +93,8 @@ class ServiceProxy:
     # IPython
 
     def getdoc(self):
-        resp = self.client.query('help', to_service=self.service_name)
-        try:
-            return resp['data']
-        except KeyError:
-            return "No documentation"
+        raw_data = self.client.request('help', service=self.service_name)
+        return raw_data.decode("utf8")
 
 class CellaservProxy():
     """Proxy class for cellaserv."""
@@ -119,10 +119,11 @@ class CellaservProxy():
             self.socket.close()
 
     def __call__(self, event, **kwargs):
-        """Send a notify message.
+        """Send a publish message.
 
         :param event string: The event name.
         :param kwargs dict: Optional data sent with the event.
         """
-
-        self.client.notify(event=event, event_data=kwargs)
+        logger.debug("Publish %s(%s)", event, kwargs)
+        self.client.publish(event=event,
+                            data=json.dumps(kwargs).encode("utf8"))
