@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import logging
+
 try:
     import local_settings
     HOST, PORT = local_settings.HOST, local_settings.PORT
@@ -18,3 +20,5 @@ except:
 
     DEBUG = int(os.environ.get("CS_DEBUG",
         config.get("client", "debug", fallback="0")))
+
+logging.basicConfig()
