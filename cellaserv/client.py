@@ -26,7 +26,18 @@ from cellaserv.protobuf.cellaserv_pb2 import (
 
 from cellaserv.settings import DEBUG
 
-logging.basicConfig(level=logging.DEBUG if DEBUG != 0 else logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if DEBUG >= 2 else logging.INFO)
+
+class ReplyError(Exception):
+    def __init__(self, rep):
+        self.rep = rep
+
+    def __str__(self):
+        return MessageToString(self.rep)
+
+class RequestTimeout(Exception):
+    pass
 
 class AbstractClient:
     """Abstract client. Send protobuf messages."""
@@ -36,7 +47,7 @@ class AbstractClient:
         self._request_seq_id = 0
 
     def send_message(self, msg, *args, **kwargs):
-        logging.debug("Sending: %s", msg)
+        logger.debug("Sending:\n%s", msg)
 
         self._send_message(msg.SerializeToString(), *args, **kwargs)
 
@@ -162,24 +173,26 @@ class SynClient(AbstractClient):
             message = Message()
             message.ParseFromString(msg)
             if message.type != Message.Reply:
-                logging.warning("[Request] Dropping non Reply:")
-                logging.warning(message)
+                logger.warning("[Request] Dropping non Reply:")
+                logger.warning(message)
                 continue
 
             reply = Reply()
             reply.ParseFromString(message.content)
             if reply.id != req_id:
-                logging.warning("[Request] Dropping Reply for the wrong Request")
-                logging.warning(reply)
+                logger.warning("[Request] Dropping Reply for the wrong Request")
+                logger.warning(reply)
                 continue
             if reply.HasField('error'):
-                logging.error("[Request] Received error:")
-                logging.error(reply)
-                return None
+                logger.error("[Reply] Received error")
+                if reply.error.type == Reply.Error.Timeout:
+                    raise RequestTimeout()
+                else:
+                    raise ReplyError(reply)
 
-            logging.debug("Received: %s", reply)
+            logger.debug("Received:\n%s", reply)
 
-            return reply.data
+            return reply.data if reply.HasField('data') else None
 
 class AsynClient(asynchat.async_chat, AbstractClient):
     """Asynchronous cellaserv client."""
@@ -258,8 +271,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
                 else:
                     cb()
         else:
-            logging.warning("Invalid message:")
-            logging.warning(MessageToString(msg))
+            logger.warning("Invalid message:\n%s", MessageToString(msg))
 
     def on_request(self, req):
         pass
