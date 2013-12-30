@@ -10,17 +10,17 @@
 
 Set::
 
-    $ cellasend command=notify event=some-event
-    $ cellasend command=notify event=my-set
+    $ cellaservctl publish some-event
+    $ cellaservctl publish my-set
 
 Clear::
 
     # No clearing event have been declared for some_event
-    $ cellasend command=notify event=my-clear
+    $ cellaservctl publish my-clear
 
 Passing data::
 
-    $ cellasend command=notify event=my-set .foo=bar
+    $ cellaservctl publish my-set foo=bar
 
 Will display::
 
@@ -30,7 +30,7 @@ Will display::
 from time import sleep
 from threading import Thread
 
-from cellaserv.service import Service
+from cellaserv.service import Service, Variable
 
 class Foo(Service):
 
@@ -40,8 +40,8 @@ class Foo(Service):
         self.t = Thread(target=self.thread_loop)
         self.t.start()
 
-    some_event = Service.variable() # set event is 'some-event'
-    variable = Service.variable(set='my-set', clear='my-clear')
+    some_event = Variable() # set event is 'some_event'
+    variable = Variable(set='my-set', clear='my-clear')
 
     # Threads
 
