@@ -34,7 +34,7 @@ class ReplyError(Exception):
     def __init__(self, rep):
         self.rep = rep
 
-    def __str__(self):
+    def __repr__(self):
         return MessageToString(self.rep)
 
 class RequestTimeout(Exception):
@@ -67,12 +67,13 @@ class AbstractClient:
         self.send_message(msg)
 
     def reply_error_to(self, req, error_type, what=None):
-        reply = Reply()
-        reply.id = req.id
-        reply.error = Reply.Error()
-        reply.error.type = error_type
-        if what:
-            reply.error.what = what
+        error = Reply.Error()
+        error.type = error_type
+        if what is not None:
+            error.what = what
+
+        reply = Reply(id=req.id, error=error)
+
         msg = Message()
         msg.type = Message.Reply
         msg.content = reply.SerializeToString()
