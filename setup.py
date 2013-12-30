@@ -7,7 +7,6 @@ setup(
     description='Python client for cellaserv',
     author='Remi Audebert - Evolutek 2013-2014',
     author_email='contact@halfr.net',
-    install_requires=['pygments'],
 
     packages=['cellaserv', 'cellaserv.protobuf'],
 
