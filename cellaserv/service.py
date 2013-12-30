@@ -61,7 +61,7 @@ class Variable(threading.Event):
         ...     ...
     """
 
-    def __init__(self, set, clear):
+    def __init__(self, set=None, clear=None):
         """:param set str: Event that sets the variable
         :param clear str: Event that clears the variable
         """
