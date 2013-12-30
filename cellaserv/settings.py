@@ -22,3 +22,7 @@ except:
         config.get("client", "debug", fallback="0")))
 
 logging.basicConfig()
+
+def get_socket():
+    import socket
+    return socket.create_connection((HOST, PORT))
