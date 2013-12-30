@@ -9,6 +9,7 @@ Sample usage is provided in the ``example/`` folder of the source distribution.
 
 import asynchat
 import logging
+import random
 import struct
 
 from collections import defaultdict
@@ -44,7 +45,7 @@ class AbstractClient:
 
     def __init__(self):
         # Nonce used to identify requests
-        self._request_seq_id = 0
+        self._request_seq_id = random.randrange(0, 2**32)
 
     def send_message(self, msg, *args, **kwargs):
         logger.debug("Sending:\n%s", msg)
