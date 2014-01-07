@@ -153,8 +153,7 @@ class SynClient(AbstractClient):
         self._socket = sock
 
     def _send_message(self, msg, *args, **kwargs):
-        self._socket.send(struct.pack("!I", len(msg)))
-        self._socket.send(msg)
+        self._socket.send(struct.pack("!I", len(msg)) + msg)
 
     ### Actions
 
