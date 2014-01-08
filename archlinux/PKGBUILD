@@ -1,6 +1,6 @@
 # Maintainer: Rémi Audebert <mail@halfr.net>
 pkgname=python-cellaserv2
-pkgver=r184.f25bbd1
+pkgver=
 pkgrel=1
 pkgdesc="cellaserv2 client for python"
 arch=('any')
