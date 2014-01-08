@@ -1,6 +1,5 @@
 Requirements:
 
-    setuptools
     google-protobuf with python3 support, eg. https://github.com/malthe/google-protobuf
 
 Run:
@@ -10,4 +9,4 @@ Run:
 
 Or using pip for git:
 
-    $ pip install 'git+ssh://git@bitbucket.org/evolutek/python-cellaserv.git#egg=python-cellaserv'
+    $ pip install 'git+ssh://git@bitbucket.org/evolutek/python-cellaserv2.git#egg=python-cellaserv2'
