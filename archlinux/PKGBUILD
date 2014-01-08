@@ -1,25 +1,28 @@
 # Maintainer: Rémi Audebert <mail@halfr.net>
-pkgname=python-cellaserv
-pkgver=5
+pkgname=python-cellaserv2
+pkgver=r184.f25bbd1
 pkgrel=1
-pkgdesc="cellaserv client for python"
-arch=(any)
-url="http://code.evolutek.org/python-cellaserv"
-license=('GPL')
+pkgdesc="cellaserv2 client for python"
+arch=('any')
+url="http://code.evolutek.org/python-cellaserv2"
+license=('beerware')
 groups=()
-depends=('python3')
-makedepends=()
-provides=()
-conflicts=()
-replaces=()
-backup=()
+depends=('python3' 'python-protobuf')
+conflicts=('python-cellaserv')
+provides=('python-cellaserv')
 options=(!emptydirs)
-install=
-source=("http://code.evolutek.org/releases/$pkgname-$pkgver.tar.xz")
-md5sums=() # makepkg -g
+source=("$pkgname::git+https://bitbucket.org/evolutek/python-cellaserv2.git")
+md5sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/$pkgname"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
 
 package() {
   cd "$srcdir/$pkgname"
+  git submodule init cellaserv/protobuf
+  git submodule update cellaserv/protobuf
   python3 setup.py install --root="$pkgdir/" --optimize=1
 }
 
