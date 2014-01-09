@@ -1,7 +1,6 @@
-"""
-Proxy object for cellaserv.
+"""Proxy object for cellaserv.
 
-Default server: ``evolutek.org`` port ``4200``.
+Data for requests and events is encoded as JSON objects.
 
 Example usage::
 
@@ -9,24 +8,10 @@ Example usage::
     >>> robot = CellaservProxy()
     >>> robot.date.time()
     1353714592
-
-From within a Service::
-
-    >>> from cellaserv.service import Service
-    >>> from cellaserv.proxy import CellaservProxy
-    >>> class Foo(Service):
-    ...     def __init__(self):
-    ...         super().__init__()
-    ...         self.cs = CellaservProxy(client=self)
-
-.. warning::
-
-    Using the Service as client for the proxy can be misleading.
-
-    Service is a subclass of AsynClient, call to cs.service.action() will
-    return the ``request`` id of the message, not the actual response. If you
-    want to have it, you must use a SynClient (wich is what is used if
-    CellaservProxy is not created with a ``client`` argument).
+    >>> # Send event 'match-start'
+    >>> robot('match-start')
+    >>> # Send event 'wait' with data
+    >>> robot('wait', seconds=2)
 """
 
 import json
