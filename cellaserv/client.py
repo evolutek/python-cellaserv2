@@ -105,6 +105,9 @@ class AbstractClient:
         :return: The message id
         :rtype: int"""
 
+        logger.info("[Request] %s/%s.%s(%s)", service, identification, method,
+                data)
+
         request = Request(service_name=service, method=method)
         if identification:
             request.service_identification = identification
@@ -121,7 +124,12 @@ class AbstractClient:
         return request.id
 
     def publish(self, event, data=None, *args, **kwargs):
-        """Send a ``publish`` message"""
+        """Send a ``publish`` message.
+
+        :param event str: The event name
+        :param data bytes: Optional data sent with the event"""
+
+        logger.info("[Publish] %s(%s)", event, data)
 
         publish = Publish(event=event)
         if data:
@@ -134,6 +142,8 @@ class AbstractClient:
 
     def subscribe(self, event, *args, **kwargs):
         """Send a ``subscribe`` message."""
+
+        logger.info("[Subscribe] %s", event)
 
         subscribe = Subscribe(event=event)
 

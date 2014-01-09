@@ -15,14 +15,10 @@ Example usage::
 """
 
 import json
-import logging
 import socket
 
 import cellaserv.client
 import cellaserv.settings
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG if cellaserv.settings.DEBUG >= 1 else logging.INFO)
 
 class ActionProxy:
     """Action proxy for cellaserv."""
@@ -42,8 +38,6 @@ class ActionProxy:
             ret = json.loads(raw_data.decode("utf8"))
         else:
             ret = None
-        logger.debug("%s[%s].%s(%s) = %s", self.service, self.identification,
-                self.action, data, ret)
         return ret
 
     # IPython
@@ -109,6 +103,5 @@ class CellaservProxy():
         :param event string: The event name.
         :param kwargs dict: Optional data sent with the event.
         """
-        logger.debug("Publish %s(%s)", event, kwargs)
         self.client.publish(event=event,
                             data=json.dumps(kwargs).encode("utf8"))
