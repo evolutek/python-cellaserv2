@@ -30,10 +30,11 @@ class ActionProxy:
         self.client = client
 
     def __call__(self, **data):
+        req_data = json.dumps(data).encode("utf8") if data else None
         raw_data = self.client.request(self.action,
                                        service=self.service,
                                        identification=self.identification,
-                                       data=json.dumps(data).encode("utf8"))
+                                       data=req_data)
         if raw_data is not None:
             ret = json.loads(raw_data.decode("utf8"))
         else:
