@@ -28,7 +28,9 @@ from cellaserv.protobuf.cellaserv_pb2 import (
 from cellaserv.settings import DEBUG
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG if DEBUG >= 2 else logging.INFO)
+logger.setLevel(logging.DEBUG if DEBUG >= 2
+                else logging.INFO if DEBUG == 1
+                else logging.WARNING)
 
 class ReplyError(Exception):
     def __init__(self, rep):
