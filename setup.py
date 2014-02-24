@@ -11,5 +11,7 @@ setup(
     author='Remi Audebert - Evolutek 2013-2014',
     author_email='contact@halfr.net',
 
+    install_requires=open('requirements.txt').read().splitlines(),
+
     packages=['cellaserv', 'cellaserv.protobuf'],
 )
