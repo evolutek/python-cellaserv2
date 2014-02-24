@@ -16,7 +16,7 @@ PORT = int(os.environ.get("CS_PORT",
     config.get("client", "port", fallback="4200")))
 
 DEBUG = int(os.environ.get("CS_DEBUG",
-    config.get("client", "debug", fallback="0")))
+    config.get("client", "debug", fallback="0")) or '0')
 
 def get_socket():
     return socket.create_connection((HOST, PORT))
