@@ -10,13 +10,21 @@ logging.basicConfig()
 config = configparser.ConfigParser()
 config.read(['/etc/conf.d/cellaserv'])
 
-HOST = os.environ.get("CS_HOST",
-        config.get("client", "host", fallback="evolutek.org"))
-PORT = int(os.environ.get("CS_PORT",
-    config.get("client", "port", fallback="4200")))
+try:
+    HOST = os.environ.get("CS_HOST", config.get("client", "host"))
+except:
+    HOST = "evolutek.org"
 
-DEBUG = int(os.environ.get("CS_DEBUG",
-    config.get("client", "debug", fallback="0")) or '0')
+try:
+    PORT = int(os.environ.get("CS_PORT",
+        config.get("client", "port")))
+except:
+    PORT = 4200
+
+try:
+    DEBUG = int(os.environ.get("CS_DEBUG", config.get("client", "debug")))
+except:
+    DEBUG = 0
 
 def get_socket():
     return socket.create_connection((HOST, PORT))
