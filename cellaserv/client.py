@@ -184,10 +184,11 @@ class SynClient(AbstractClient):
 
     ### Actions
 
-    def request(self, method, service, identification=None, data=None,
+    def request(self, method, service, identification=None, data=None, *args,
+            **kwargs):
         """Blocking ``request``."""
         req_id = super().request(method=method, service=service,
-            identification=identification, data=data)
+            identification=identification, data=data, *args, **kwargs)
 
         while True:
             # Receive message header
@@ -215,7 +216,7 @@ class SynClient(AbstractClient):
             if reply.HasField('error'):
                 logger.error("[Reply] Received error")
                 if reply.error.type == Reply.Error.Timeout:
-                    raise RequestTimeout(request)
+                    raise RequestTimeout(reply)
                 elif reply.error.type == Reply.Error.NoSuchService:
                     raise NoSuchService(service)
                 elif reply.error.type == Reply.Error.NoSuchMethod:
