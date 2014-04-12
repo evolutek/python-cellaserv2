@@ -36,11 +36,26 @@ class ReplyError(Exception):
     def __init__(self, rep):
         self.rep = rep
 
-    def __repr__(self):
+    def __str__(self):
         return MessageToString(self.rep)
 
-class RequestTimeout(Exception):
+class RequestTimeout(ReplyError):
     pass
+
+class NoSuchService(Exception):
+    def __init__(self, service):
+        self.service = service
+
+    def __str__(self):
+        return "No such service: {0}".format(self.service)
+
+class NoSuchMethod(Exception):
+    def __init__(self, service, method):
+        self.service = service
+        self.method = method
+
+    def __str__(self):
+        return "No such method: {0}.{1}".format(self.service, self.method)
 
 class AbstractClient:
     """Abstract client. Send protobuf messages."""
@@ -169,9 +184,10 @@ class SynClient(AbstractClient):
 
     ### Actions
 
-    def request(self, *args, **kwargs):
+    def request(self, method, service, identification=None, data=None,
         """Blocking ``request``."""
-        req_id = super().request(*args, **kwargs)
+        req_id = super().request(method=method, service=service,
+            identification=identification, data=data)
 
         while True:
             # Receive message header
@@ -199,7 +215,11 @@ class SynClient(AbstractClient):
             if reply.HasField('error'):
                 logger.error("[Reply] Received error")
                 if reply.error.type == Reply.Error.Timeout:
-                    raise RequestTimeout()
+                    raise RequestTimeout(request)
+                elif reply.error.type == Reply.Error.NoSuchService:
+                    raise NoSuchService(service)
+                elif reply.error.type == Reply.Error.NoSuchMethod:
+                    raise NoSuchMethod(service, method)
                 else:
                     raise ReplyError(reply)
 
