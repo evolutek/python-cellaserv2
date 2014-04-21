@@ -1,6 +1,6 @@
 """
-Service allows you to write cellaserv services with high-level decorators:
-Service.action and Service.event.
+``Service`` allows you to easily write cellaserv services with high-level
+decorators and concepts.
 
 Example usage:
 
@@ -28,6 +28,32 @@ the following format::
     port = 4200
 
 If this file is not found it defaults to HOST = evolutek.org and PORT = 4200.
+
+Starting more than one service
+------------------------------
+
+It is sometime preferable to start multiple services at the same time, for
+example the same service but with different identifications. In this case you
+will instanciate multiple services, call setup() on each of this services and
+then give control to the async loop with Service.loop().
+
+Example usage:
+
+    >>> from cellaserv.service import Service
+    >>> class Bar(Service):
+    ...     def __init__(self, id):
+    ...         super().__init__(identification=id)
+    ...
+    ...     @Service.action
+    ...     def bar(self):
+    ...         print(self.identification)
+    ...
+    >>> services = [Bar(i) for i in range(10)]
+    >>> for s in services:
+    ...    s.setup()
+    ...
+    >>> Service.loop()
+
 """
 
 import asyncore
@@ -51,7 +77,16 @@ def _request_to_string(req):
     return "{r.service_name}[{r.service_identification}].{r.method}({r.data}) #{r.id}".format(r=req)
 
 class Variable(threading.Event):
-    """Variables help you share data and states between services.
+    """
+    Variables help you share data and states between services.
+
+    The value of the variable can be set by cellaserv publish messages. When a
+    service publishs the event associated with this variable, the underlying
+    threding.Event will be set() and any thread wait()ing for it will we
+    awaken.
+
+    The events associated with this Variable can be set in the constructor, but
+    must be subscribed by another client, eg. a Service subclass.
 
     Example::
 
@@ -62,7 +97,10 @@ class Variable(threading.Event):
     """
 
     def __init__(self, set=None, clear=None):
-        """:param set str: Event that sets the variable
+        """
+        Define a new cellaserv Variable.
+
+        :param set str: Event that sets the variable
         :param clear str: Event that clears the variable
         """
         super().__init__()
@@ -79,7 +117,12 @@ class Service(AsynClient):
     identification = None
 
     def __new__(cls, *args, **kwargs):
-        """Metaprogramming magic."""
+        """
+        This method setup the list of actions (_actions) and subscribed events
+        (_event). It is called when a new subclass of Service is declared.
+
+        Basic level of metaprogramming magic.
+        """
 
         def _var_wrap_set(variable):
             def _variable_set(self, **kwargs):
@@ -117,11 +160,7 @@ class Service(AsynClient):
         return super(Service, cls).__new__(cls)
 
     def __init__(self, identification=None):
-        HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
-
-        sock = socket.create_connection((HOST, PORT))
-
-        super().__init__(sock)
+        super().__init__(cellaserv.settings.get_socket())
 
         self.identification = identification or self.identification
 
@@ -150,9 +189,11 @@ class Service(AsynClient):
 
     @classmethod
     def event(cls, method_or_name):
-        """The method decorated with ``Service.event`` will be called when a
-        event matching its name (or argument passed to ``Service.event``) will
-        be received."""
+        """
+        The method decorated with ``Service.event`` will be called when a event
+        matching its name (or argument passed to ``Service.event``) will be
+        received.
+        """
 
         def _set_event(method, event):
             try:
@@ -174,10 +215,17 @@ class Service(AsynClient):
 
     @classmethod
     def _decode_data(cls, msg):
+        """Returns the data contained in a message."""
         if msg.HasField('data'):
-            # We assume json formatted data
-            txt = msg.data.decode('utf8')
-            return json.loads(txt)
+            # We expect json formatted data
+            try:
+                obj = msg.data.decode()
+                return json.loads(obj)
+            except (UnicodeDecodeError, ValueError):
+                # In case the data cannot be decoded, return raw data
+                # Can be used to communicate with services that does not handle
+                # json data, but only raw bytes.
+                return msg.data
         else:
             return {}
 
@@ -185,6 +233,7 @@ class Service(AsynClient):
     # Regular methods
 
     def on_request(self, req):
+        """on_request is called when a request is received by the service."""
         if (req.HasField('service_identification')
             and req.service_identification != self.identification):
             logger.warning("Dropping request for wrong identification")
@@ -216,7 +265,7 @@ class Service(AsynClient):
                     self.service_name, self.identification, method, data,
                     reply_data)
             if reply_data is not None:
-                reply_data = json.dumps(reply_data).encode("utf8")
+                reply_data = json.dumps(reply_data).encode()
         except Exception as e:
             logger.error("Exception during %s", _request_to_string(req),
                          exc_info=True)
@@ -278,13 +327,15 @@ class Service(AsynClient):
         self.publish(log_name, data=kwargs)
 
     def setup(self):
-        """Use this if you want to setup multiple service before running
-        ``Service.loop()``."""
+        """
+        Use this if you want to setup multiple service before running
+        ``Service.loop()``.
+        """
 
         def _event_wrap(fun):
             def _wrap(data=None):
                 if data:
-                    kwargs = json.loads(data.decode("utf8"))
+                    kwargs = json.loads(data.decode())
                 else:
                     kwargs = {}
                 logger.debug("Publish calls: %s(%s)", fun, kwargs)
@@ -301,10 +352,18 @@ class Service(AsynClient):
             self.add_subscribe_cb(event_name, _event_wrap(callback))
 
     def run(self):
-        """One-shot to setup and start the service."""
+        """
+        One-shot method to setup and start the service at the same time. This
+        is the method you will use 90% of the time to start your service.
+        """
         self.setup()
         Service.loop()
 
     @classmethod
     def loop(cls):
+        """
+        loop() will start the asyncore engine therefore, if you have not
+        started another thread, only callbacks (eg. actions, events) will be
+        called.
+        """
         asyncore.loop()
