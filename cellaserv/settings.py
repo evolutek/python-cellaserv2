@@ -27,4 +27,5 @@ except:
     DEBUG = 0
 
 def get_socket():
+    """Open a socket to cellaserv using user configuration."""
     return socket.create_connection((HOST, PORT))
