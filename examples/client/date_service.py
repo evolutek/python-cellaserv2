@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Using the cellaserv module to implement a service answering to the
-"time" command.
 """
+Using the cellaserv module to implement a service answering to the "time"
+command.
+"""
+
+import asyncore
+import socket
 import time
 
-from cellaserv.protobuf.cellaserv_pb2 import Reply
 from cellaserv.client import AsynClient
+from cellaserv.protobuf.cellaserv_pb2 import Reply
+from cellaserv.settings import get_socket
 
 class DateService(AsynClient):
 
@@ -20,16 +25,8 @@ class DateService(AsynClient):
             self.reply_error_to(req, Reply.Error.NoSuchMethod)
 
 def main():
-    import asyncore
-    import socket
-
-    import cellaserv.settings
-
-    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
-
-    with socket.create_connection((HOST, PORT)) as sock:
+    with get_socket() as sock:
         service = DateService(sock)
-
         asyncore.loop()
 
 if __name__ == "__main__":

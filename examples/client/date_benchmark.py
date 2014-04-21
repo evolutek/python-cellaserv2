@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Sample client, synchronous time request to the date service through
-cellaserv.
 """
+Sample client, synchronous time request to the date service through cellaserv.
+"""
+
+import time
 
 from cellaserv.client import SynClient
 from cellaserv.settings import get_socket
-import time
 
 def run_client(n):
-    client = SynClient(get_socket())
-    for _ in range(n):
-        client.request('time', 'date')
+    with get_socket() as sock:
+        client = SynClient(sock)
+        for _ in range(n):
+            client.request('time', 'date')
 
 def main():
     from multiprocessing import Pool

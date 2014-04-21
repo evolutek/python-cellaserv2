@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Using the cellaserv module to implement a service that does nothing. Used to
+"""
+Using the cellaserv module to implement a service that does nothing. Used to
 test timeouts.
 """
+import asyncore
+
+from cellaserv.settings import get_socket
 from cellaserv.client import AsynClient
 
 class DateService(AsynClient):
@@ -14,16 +18,8 @@ class DateService(AsynClient):
         pass
 
 def main():
-    import asyncore
-    import socket
-
-    import cellaserv.settings
-
-    HOST, PORT = cellaserv.settings.HOST, cellaserv.settings.PORT
-
-    with socket.create_connection((HOST, PORT)) as sock:
+    with get_socket() as sock:
         service = DateService(sock)
-
         asyncore.loop()
 
 if __name__ == "__main__":
