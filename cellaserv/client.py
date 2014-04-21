@@ -32,14 +32,19 @@ logger.setLevel(logging.DEBUG if DEBUG >= 2
                 else logging.INFO if DEBUG == 1
                 else logging.WARNING)
 
+# Exceptions
+
 class ReplyError(Exception):
     def __init__(self, rep):
         self.rep = rep
 
     def __str__(self):
-        return MessageToString(self.rep)
+        return MessageToString(self.rep).decode()
 
 class RequestTimeout(ReplyError):
+    pass
+
+class BadArguments(ReplyError):
     pass
 
 class NoSuchService(Exception):
@@ -221,6 +226,8 @@ class SynClient(AbstractClient):
                     raise NoSuchService(service)
                 elif reply.error.type == Reply.Error.NoSuchMethod:
                     raise NoSuchMethod(service, method)
+                elif reply.error.type == Reply.Error.BadArguments:
+                    raise BadArguments(reply)
                 else:
                     raise ReplyError(reply)
 
