@@ -62,6 +62,8 @@ class NoSuchMethod(Exception):
     def __str__(self):
         return "No such method: {0}.{1}".format(self.service, self.method)
 
+# Clients
+
 class AbstractClient:
     """Abstract client. Send protobuf messages."""
 
@@ -69,10 +71,10 @@ class AbstractClient:
         # Nonce used to identify requests
         self._request_seq_id = random.randrange(0, 2**32)
 
-    def send_message(self, msg, *args, **kwargs):
+    def send_message(self, msg):
         logger.debug("Sending:\n%s", msg)
 
-        self._send_message(msg.SerializeToString(), *args, **kwargs)
+        self._send_message(msg=msg.SerializeToString())
 
     def _send_message(self, *args, **kwargs):
         """Implementation specific method for sending messages."""
@@ -103,7 +105,7 @@ class AbstractClient:
 
     ### Actions
 
-    def register(self, name, identification=None, *args, **kwargs):
+    def register(self, name, identification=None):
         """Send a ``register`` message.
 
         :param str name: Name of the new service
@@ -118,10 +120,9 @@ class AbstractClient:
         message = Message(type=Message.Register,
                           content=register.SerializeToString())
 
-        self.send_message(message, *args, **kwargs)
+        self.send_message(message)
 
-    def request(self, method, service, identification=None, data=None,
-            *args, **kwargs):
+    def request(self, method, service, identification=None, data=None):
         """Send a ``request`` message.
 
         :return: The message id
@@ -141,11 +142,11 @@ class AbstractClient:
         message = Message(type=Message.Request,
                           content=request.SerializeToString())
 
-        self.send_message(message, *args, **kwargs)
+        self.send_message(message)
 
         return request.id
 
-    def publish(self, event, data=None, *args, **kwargs):
+    def publish(self, event, data=None):
         """Send a ``publish`` message.
 
         :param event str: The event name
@@ -160,9 +161,9 @@ class AbstractClient:
         message = Message(type=Message.Publish,
                           content=publish.SerializeToString())
 
-        self.send_message(message, *args, **kwargs)
+        self.send_message(message)
 
-    def subscribe(self, event, *args, **kwargs):
+    def subscribe(self, event):
         """Send a ``subscribe`` message."""
 
         logger.info("[Subscribe] %s", event)
@@ -172,28 +173,32 @@ class AbstractClient:
         message = Message(type=Message.Subscribe,
                           content=subscribe.SerializeToString())
 
-        self.send_message(message, *args, **kwargs)
+        self.send_message(message)
 
 class SynClient(AbstractClient):
-    """Synchronous cellaserv client.
+    """Synchronous (aka. blocking) cellaserv client.
 
-    Wait for ``response`` after every ``request`` message."""
+    Wait for ``reply`` after every ``request`` message.
+    """
 
     def __init__(self, sock):
         super().__init__()
 
         self._socket = sock
 
-    def _send_message(self, msg, *args, **kwargs):
+    def _send_message(self, msg):
         self._socket.send(struct.pack("!I", len(msg)) + msg)
 
     ### Actions
 
-    def request(self, method, service, identification=None, data=None, *args,
-            **kwargs):
-        """Blocking ``request``."""
+    def request(self, method, service, identification=None, data=None):
+        """
+        Blocking ``request``.
+
+        Send the ``request`` message, then wait for the reply.
+        """
         req_id = super().request(method=method, service=service,
-            identification=identification, data=data, *args, **kwargs)
+            identification=identification, data=data)
 
         while True:
             # Receive message header
@@ -208,15 +213,17 @@ class SynClient(AbstractClient):
             message = Message()
             message.ParseFromString(msg)
             if message.type != Message.Reply:
+                # Currentyle Dropping non-reply is not an issue as the
+                # SynClient is only used to send queries
                 logger.warning("[Request] Dropping non Reply:")
-                logger.warning(message)
+                logger.warning(MessageToString(message).decode())
                 continue
 
             reply = Reply()
             reply.ParseFromString(message.content)
             if reply.id != req_id:
                 logger.warning("[Request] Dropping Reply for the wrong Request")
-                logger.warning(reply)
+                logger.warning(MessageToString(reply).decode())
                 continue
             if reply.HasField('error'):
                 logger.error("[Reply] Received error")
@@ -231,7 +238,7 @@ class SynClient(AbstractClient):
                 else:
                     raise ReplyError(reply)
 
-            logger.debug("Received:\n%s", reply)
+            logger.debug("Received:\n%s", MessageToString(reply).decode())
 
             return reply.data if reply.HasField('data') else None
 
@@ -252,7 +259,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         # map events to a list of callbacks
         self._events_cb = defaultdict(list)
 
-    def _send_message(self, msg, *args, **kwargs):
+    def _send_message(self, msg):
         # 'push' is asynchat version of socket.send
         self.push(struct.pack("!I", len(msg)))
         self.push(msg)
