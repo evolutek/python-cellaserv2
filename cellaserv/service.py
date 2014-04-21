@@ -255,7 +255,27 @@ class Service(AsynClient):
 
     help_action._actions = ['help_action']
 
+    def kill(self):
+        """Kill the service."""
+        os.kill(os.getpid(), 9)
+
+    kill._actions = ['kill']
+
     # Convenience methods
+
+    def log(self, **kwargs):
+        """
+        Send a log message to cellaserv using the service's name and
+        identification if any.
+
+        Logs in cellaserv are implemented using event with the form
+        ``log.<what>``.
+        """
+        log_name = 'log.' + self.service_name
+        if self.identification:
+            log_name += self.service_name + '/' + self.identification
+
+        self.publish(log_name, data=kwargs)
 
     def setup(self):
         """Use this if you want to setup multiple service before running
