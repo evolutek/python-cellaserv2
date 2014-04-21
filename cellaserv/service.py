@@ -74,7 +74,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if cellaserv.settings.DEBUG >= 1 else logging.INFO)
 
 def _request_to_string(req):
-    return "{r.service_name}[{r.service_identification}].{r.method}({r.data}) #{r.id}".format(r=req)
+    strfmt = "{r.service_name}[{r.service_identification}].{r.method}({data}) #id={r.id}"
+    return strfmt.format(r=req, data=req.data if req.data != b"" else "")
 
 class Variable(threading.Event):
     """
@@ -344,21 +345,28 @@ class Service(AsynClient):
         """
 
         def _event_wrap(fun):
+            """Convert event data to arguments for methods."""
             def _wrap(data=None):
                 if data:
                     kwargs = json.loads(data.decode())
                 else:
                     kwargs = {}
-                logger.debug("Publish calls: %s(%s)", fun, kwargs)
-                # FIXME: Handle bad kwargs format
-                fun(self, **kwargs)
+                logger.debug("Publish callback: %s(%s)", fun.__name__, kwargs)
+                try:
+                    fun(self, **kwargs)
+                except TypeError:
+                    log_msg_fmt = "Bad publish data for function {0}: {1}"
+                    log_msg = log_msg_fmt.format(fun.__name__, kwargs)
+                    self.log(msg=log_msg)
             return _wrap
 
         if not self.service_name:
             self.service_name = self.__class__.__name__.lower()
 
+        # Register the service
         self.register(self.service_name, self.identification)
 
+        # Subsribe to all events
         for event_name, callback in self._events.items():
             self.add_subscribe_cb(event_name, _event_wrap(callback))
 
