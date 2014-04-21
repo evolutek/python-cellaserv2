@@ -8,6 +8,7 @@ Sample usage is provided in the ``example/`` folder of the source distribution.
 """
 
 import asynchat
+import fnmatch
 import logging
 import random
 import struct
@@ -266,6 +267,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
         # map events to a list of callbacks
         self._events_cb = defaultdict(list)
+        self._events_pattern_cb = defaultdict(list)
 
     def _send_message(self, msg):
         # 'push' is asynchat version of socket.send
@@ -303,8 +305,13 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def add_subscribe_cb(self, event, event_cb):
         """On event ``event`` recieved, call ``event_cb``"""
-        self.subscribe(event)
         self._events_cb[event].append(event_cb)
+        self.subscribe(event)
+
+    def add_subscribe_pattern_cb(self, pattern, event_cb):
+        """On event ``event`` recieved, call ``event_cb``"""
+        self._events_pattern_cb[pattern].append(event_cb)
+        self.subscribe(pattern)
 
     # Callbacks
 
@@ -321,13 +328,26 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         elif msg.type == Message.Publish:
             pub = Publish()
             pub.ParseFromString(msg.content)
+
+            # Basic subscriptions
             for cb in self._events_cb[pub.event]:
                 if pub.HasField('data'):
                     cb(pub.data)
                 else:
                     cb()
+
+            # Pattern subscriptions
+            for pattern, cb_list in self._events_pattern_cb.items():
+                if fnmatch.fnmatch(pub.event, pattern):
+                    for cb in cb_list:
+                        if pub.HasField('data'):
+                            cb(pub.data, event=pub.event)
+                        else:
+                            cb(event=pub.event)
+
         else:
-            logger.warning("Invalid message:\n%s", MessageToString(msg))
+            logger.warning("Invalid message:\n%s",
+                MessageToString(msg).decode())
 
     def on_request(self, req):
         pass
