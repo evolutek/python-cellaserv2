@@ -230,22 +230,29 @@ class Service(AsynClient):
 
     def help(self):
         """List exported actions."""
-        doc = []
-        for name, f in self._actions.items():
-            doc.append(f.__doc__ or ''.join(pydoc.render_doc(f,
-                title='%s').splitlines()[2:]))
+        docs = {}
+        for name in self._actions.keys():
+            # We get the function from self to get bound method in order to
+            # remove the first parameter.
+            f = getattr(self, name)
+            doc = inspect.getdoc(f) or str(inspect.signature(f))
+            docs[name] = doc
+        return docs
 
-        return '\n'.join(doc).encode("utf8")
     help._actions = ['help']
 
     def help_action(self, action):
         """Returns the docstring of the method ``action``."""
-        try:
-            f = self._actions[action]
-        except KeyError:
-            return b"No such action"
-        return f.__doc__ or ''.join(pydoc.render_doc(f,
-            title="%s").splitlines()[2:])
+        if action in self._actions:
+            f = getattr(self, action)
+        else:
+            return "No such action."
+
+        doc = {}
+        doc["doc"] = inspect.getdoc(f)
+        doc["signature"] = str(inspect.signature(f))
+        return doc
+
     help_action._actions = ['help_action']
 
     # Convenience methods
