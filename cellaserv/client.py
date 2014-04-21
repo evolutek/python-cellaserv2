@@ -206,12 +206,17 @@ class SynClient(AbstractClient):
             # Header is the size of the message as a uint32 in network byte order
             msg_len = struct.unpack("!I", hdr)[0]
 
-            # Receive message
-            msg = self._socket.recv(msg_len)
+            # Receive message, which may be in multiple packets so use a loop
+            msg = b""
+            while msg_len != 0:
+                buf = self._socket.recv(msg_len)
+                msg_len -= len(buf)
+                msg += buf
 
             # Parse message
             message = Message()
             message.ParseFromString(msg)
+
             if message.type != Message.Reply:
                 # Currentyle Dropping non-reply is not an issue as the
                 # SynClient is only used to send queries
