@@ -278,31 +278,42 @@ class Service(AsynClient):
     # Default actions
 
     def help(self):
-        """List exported actions."""
+        """Help about this service."""
         docs = {}
-        for name in self._actions.keys():
-            # We get the function from self to get bound method in order to
-            # remove the first parameter.
-            f = getattr(self, name)
-            doc = inspect.getdoc(f) or str(inspect.signature(f))
-            docs[name] = doc
+        docs["doc"] = inspect.getdoc(self)
+        docs["actions"] = self.help_actions()
+        docs["events"] = self.help_events()
         return docs
 
     help._actions = ['help']
 
-    def help_action(self, action):
-        """Returns the docstring of the method ``action``."""
-        if action in self._actions:
-            f = getattr(self, action)
-        else:
-            return "No such action."
+    def help_actions(self):
+        """List available actions for this service."""
+        docs = {}
+        for action_name, unbound_f in self._actions.items():
+            # The name of the method can be != action_action
+            f_name = unbound_f.__name__
+            # Get the function from self to get a bound method in order to
+            # remove the first parameter (class name).
+            bound_f = getattr(self, f_name)
+            doc = inspect.getdoc(bound_f)
+            sig = action_name + str(inspect.signature(bound_f))
+            docs[action_name] = {'doc': doc, 'sig': sig}
+        return docs
 
+    help_actions._actions = ['help_actions']
+
+    def help_events(self):
+        """List subscribed events of this service."""
         doc = {}
-        doc["doc"] = inspect.getdoc(f)
-        doc["signature"] = str(inspect.signature(f))
+        for event, unbound_f in self._events.items():
+            bound_f = getattr(self, unbound_f.__name__)
+            doc[event] = (inspect.getdoc(bound_f) or
+                    str(inspect.signature(bound_f)))
+
         return doc
 
-    help_action._actions = ['help_action']
+    help_events._actions = ['help_events']
 
     def kill(self):
         """Kill the service."""
