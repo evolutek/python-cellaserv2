@@ -335,7 +335,7 @@ class Service(AsynClient):
         if self.identification:
             log_name += self.service_name + '/' + self.identification
 
-        self.publish(log_name, data=kwargs)
+        self.publish(log_name, data=json.dumps(kwargs).encode())
 
     def setup(self):
         """
