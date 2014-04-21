@@ -220,16 +220,19 @@ class SynClient(AbstractClient):
             if message.type != Message.Reply:
                 # Currentyle Dropping non-reply is not an issue as the
                 # SynClient is only used to send queries
-                logger.warning("[Request] Dropping non Reply:")
-                logger.warning(MessageToString(message).decode())
+                logger.warning("[Request] Dropping non Reply: "
+                        + MessageToString(message).decode())
                 continue
 
             reply = Reply()
             reply.ParseFromString(message.content)
+
             if reply.id != req_id:
-                logger.warning("[Request] Dropping Reply for the wrong Request")
-                logger.warning(MessageToString(reply).decode())
+                logger.warning(
+                        "[Request] Dropping Reply for the wrong request: "
+                        + MessageToString(reply).decode())
                 continue
+
             if reply.HasField('error'):
                 logger.error("[Reply] Received error")
                 if reply.error.type == Reply.Error.Timeout:
