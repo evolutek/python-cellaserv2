@@ -1,6 +1,6 @@
 """
-``Service`` allows you to easily write cellaserv services with high-level
-decorators and concepts.
+Service allows you to write cellaserv services with high-level decorators:
+Service.action and Service.event.
 
 Example usage:
 
@@ -160,10 +160,12 @@ class Service(AsynClient):
 
         return super(Service, cls).__new__(cls)
 
-    def __init__(self, identification=None):
-        super().__init__(cellaserv.settings.get_socket())
+    def __init__(self, identification=None, sock=None):
+        if not sock:
+            sock = cellaserv.settings.get_socket()
 
         self.identification = identification or self.identification
+        super().__init__(sock)
 
     # Decorators
 
