@@ -41,7 +41,7 @@ class ActionProxy:
             ret = None
         return ret
 
-    # IPython
+    # IPython stuff
 
     def getdoc(self):
         raw_data = self.client.request('help_action',

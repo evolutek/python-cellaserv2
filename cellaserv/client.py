@@ -198,9 +198,11 @@ class SynClient(AbstractClient):
 
         Send the ``request`` message, then wait for the reply.
         """
+        # Send the request
         req_id = super().request(method=method, service=service,
             identification=identification, data=data)
 
+        # Wait for response
         while True:
             # Receive message header
             hdr = self._socket.recv(4)
@@ -225,6 +227,7 @@ class SynClient(AbstractClient):
                         + MessageToString(message).decode())
                 continue
 
+            # Parse reply
             reply = Reply()
             reply.ParseFromString(message.content)
 
@@ -234,6 +237,7 @@ class SynClient(AbstractClient):
                         + MessageToString(reply).decode())
                 continue
 
+            # Check if reply is an error
             if reply.HasField('error'):
                 logger.error("[Reply] Received error")
                 if reply.error.type == Reply.Error.Timeout:
