@@ -1,4 +1,7 @@
 """
+Service
+=======
+
 Service allows you to write cellaserv services with high-level decorators:
 Service.action and Service.event.
 
@@ -57,16 +60,11 @@ Example usage:
 """
 
 import asyncore
-import configparser
 import inspect
 import json
 import logging
 import os
-import pydoc
-import socket
-import sys
 import threading
-import traceback
 
 import cellaserv.settings
 from cellaserv.client import AsynClient
@@ -75,6 +73,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if cellaserv.settings.DEBUG >= 1 else logging.INFO)
 
 def _request_to_string(req):
+    """Dump request to a shorter representation"""
     strfmt = "{r.service_name}[{r.service_identification}].{r.method}({data}) #id={r.id}"
     return strfmt.format(r=req, data=req.data if req.data != b"" else "")
 
@@ -89,6 +88,9 @@ class Variable(threading.Event):
 
     The events associated with this Variable can be set in the constructor, but
     must be subscribed by another client, eg. a Service subclass.
+
+    This is believed to be thread-safe. That is mutliple threads can wait()
+    this varible and each of then will be woken up when the variable is set().
 
     Example::
 
@@ -237,7 +239,9 @@ class Service(AsynClient):
     # Regular methods
 
     def on_request(self, req):
-        """on_request is called when a request is received by the service."""
+        """
+        on_request(req) is called when a request is received by the service.
+        """
         if (req.HasField('service_identification')
             and req.service_identification != self.identification):
             logger.warning("Dropping request for wrong identification")
@@ -281,8 +285,12 @@ class Service(AsynClient):
 
     # Default actions
 
-    def help(self):
-        """Help about this service."""
+    def help(self) -> dict:
+        """Help about this service.
+
+        TODO: refactor all help functions, compute help dicts when creating the
+        class using metaprogramming.
+        """
         docs = {}
         docs["doc"] = inspect.getdoc(self)
         docs["actions"] = self.help_actions()
@@ -291,7 +299,7 @@ class Service(AsynClient):
 
     help._actions = ['help']
 
-    def help_actions(self):
+    def help_actions(self) -> dict:
         """List available actions for this service."""
         docs = {}
         for action_name, unbound_f in self._actions.items():
@@ -307,7 +315,7 @@ class Service(AsynClient):
 
     help_actions._actions = ['help_actions']
 
-    def help_events(self):
+    def help_events(self) -> dict:
         """List subscribed events of this service."""
         doc = {}
         for event, unbound_f in self._events.items():
@@ -319,7 +327,7 @@ class Service(AsynClient):
 
     help_events._actions = ['help_events']
 
-    def kill(self):
+    def kill(self) -> "Does not return.":
         """Kill the service."""
         os.kill(os.getpid(), 9)
 
@@ -343,13 +351,17 @@ class Service(AsynClient):
 
     def setup(self):
         """
+        setup() will use the socket connected to cellaserv to initialize the
+        service.
+
         Use this if you want to setup multiple service before running
         ``Service.loop()``.
         """
 
         def _event_wrap(fun):
-            """Convert event data to arguments for methods."""
+            """Convert event data (raw bytes) to arguments for methods."""
             def _wrap(data=None):
+                """called by cellaserv.client.AsynClient"""
                 if data:
                     kwargs = json.loads(data.decode())
                 else:
@@ -364,6 +376,7 @@ class Service(AsynClient):
             return _wrap
 
         if not self.service_name:
+            # service name is class name in lower case
             self.service_name = self.__class__.__name__.lower()
 
         # Register the service
