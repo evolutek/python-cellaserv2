@@ -66,6 +66,8 @@ import logging
 import os
 import threading
 
+from google.protobuf.text_format import MessageToString
+
 import cellaserv.settings
 from cellaserv.client import AsynClient
 
@@ -109,16 +111,88 @@ class Variable(threading.Event):
         """
         super().__init__()
 
-        self.name = "?"
+        self.name = "?" # set by Service to the name of the declared field
         self.data = {}
 
         self._event_set = set
         self._event_clear = clear
 
+    def __call__(self):
+        """Handy syntactic sugar for accessing the variable value."""
+        return self.data
+
+class ConfigVariable:
+    """
+    ConfigVariable setup a variable using the 'config' service. It will always
+    have the latest value.
+
+    Event that update the value of this variable: 'config.<section>.<option>'
+
+    Example::
+
+        >>> from cellaserv.service import Service, ConfigVariable
+        >>> class Match(Service):
+        ...     color = ConfigVariable("match", "color")
+        ...     ...
+
+    You can also add callbacks to get notified when the variable is updated::
+
+        >>> from cellaserv.service import Service, ConfigVariable
+        >>> class Match(Service):
+        ...     color = ConfigVariable("match", "color")
+        ...     def __init__(self):
+        ...         self.on_color_update() # set the self.color_coef
+        ...         self.color.add_update_cb(self.on_color_update)
+        ...     def on_color_update(self, value):
+        ...         self.color_coef = 1 if value == "red" else -1
+    """
+
+    def __init__(self, section, option):
+        """
+        Define a new config variable using the 'config service'.
+
+        :param section str: The section of this variable (eg. match, robot,
+            etc.)
+        :param option str: The option corresponding to this variable in the
+            section.
+        """
+        self.section = section
+        self.option = option
+        self.update_cb = []
+
+    def add_update_cb(self, cb):
+        """
+        add_update_cb(cb) adds callback function that will be called when the
+        value of the variable is updated.
+
+        :param cb function: a function compatible with the prototype f(value)
+        """
+        self.update_cb.append(cb)
+
+    def update(self, value):
+        """
+        update(value) is called when the value of the variable changes.
+        """
+        logger.debug("Variable %s.%s updated: %s",
+                self.section, self.option, value)
+        self.value = value
+        for cb in self.update_cb:
+            cb(value)
+
+    def __call__(self):
+        """
+        Returns the current value of the variable.
+
+        Handy syntactic sugar.
+        """
+        return self.value
+
 class Service(AsynClient):
 
     service_name = None
     identification = None
+
+    # Meta
 
     def __new__(cls, *args, **kwargs):
         """
@@ -128,23 +202,31 @@ class Service(AsynClient):
         Basic level of metaprogramming magic.
         """
 
+        # Wrappers
+
         def _var_wrap_set(variable):
             def _variable_set(self, **kwargs):
-                logger.debug("Varable %s set, data=%s", variable.name, kwargs)
+                logger.debug("Variable %s set, data=%s", variable.name, kwargs)
                 variable.set()
                 variable.data = kwargs
             return _variable_set
 
         def _var_wrap_clear(variable):
             def _variable_clear(self, **kwargs):
-                logger.debug("Varable %s cleared, data=%s", variable.name,
+                logger.debug("Variable %s cleared, data=%s", variable.name,
                              kwargs)
                 variable.clear()
                 variable.data = kwargs
             return _variable_clear
 
+        def _config_var_wrap_event(variable):
+            def _variable_update(self, value):
+                variable.update(value=value)
+            return _variable_update
+
         _actions = {}
         _events = {}
+        _config_variables = []
 
         for name, member in inspect.getmembers(cls):
             if hasattr(member, "_actions"):
@@ -153,24 +235,28 @@ class Service(AsynClient):
             if hasattr(member, "_events"):
                 for event in member._events:
                     _events[event] = member
-            if isinstance(member, Variable):
+
+            if isinstance(member, ConfigVariable):
+                event_name = 'config.{section}.{option}'.format(
+                        section=member.section,
+                        option=member.option)
+                _events[event_name] = _config_var_wrap_event(member)
+                _config_variables.append(member)
+
+            elif isinstance(member, Variable):
                 member.name = name
-                _events[member._event_set or name] = _var_wrap_set(member)
-                _events[member._event_clear or name + "_clear"] = _var_wrap_clear(member)
+                event_set = member._event_set or name
+                event_clear = member._event_clear or name + "_clear"
+                _events[event_set] = _var_wrap_set(member)
+                _events[event_clear] = _var_wrap_clear(member)
 
         cls._actions = _actions
         cls._events = _events
+        cls._config_variables = _config_variables
 
         return super(Service, cls).__new__(cls)
 
-    def __init__(self, identification=None, sock=None):
-        if not sock:
-            sock = cellaserv.settings.get_socket()
-
-        self.identification = identification or self.identification
-        super().__init__(sock)
-
-    # Decorators
+    # Meta decorators
 
     @classmethod
     def action(cls, method_or_name):
@@ -217,6 +303,27 @@ class Service(AsynClient):
         else:
             return _wrapper
 
+    # Instanciated class land
+
+    def __init__(self, identification=None, sock=None):
+        self._reply_cb = {}
+
+        if not sock:
+            sock = cellaserv.settings.get_socket()
+
+        self.identification = identification or self.identification
+
+        super().__init__(sock)
+
+    def __call__(self, event, **kwargs):
+        """
+        Send a publish message.
+
+        :param event str: Event name
+        :param **kwargs: Data sent along the publish message, encoded in json.
+        """
+        self.publish(event, data=json.dumps(kwargs).encode())
+
     # Protocol helpers
 
     @classmethod
@@ -236,7 +343,23 @@ class Service(AsynClient):
             return {}
 
 
-    # Regular methods
+    # Override methods of cellaserv.client.AsynClient
+
+    def on_reply(self, rep):
+        """
+        on_reply is called when a reply is received by the service.
+        """
+        logger.debug("Reply received: %s", MessageToString(rep).decode())
+        if rep.HasField('error'):
+            logger.error("Reply is error: %s", MessageToString(rep).decode())
+
+        try:
+            self._reply_cb[rep.id](rep.data)
+            del self._reply_cb[rep.id]
+        except KeyError as e:
+            logger.error("Dropping reply for unknown request: %s", e)
+        except Exception as e:
+            logger.error("Error on reply: %s", e)
 
     def on_request(self, req):
         """
@@ -318,8 +441,15 @@ class Service(AsynClient):
     def help_events(self) -> dict:
         """List subscribed events of this service."""
         doc = {}
-        for event, unbound_f in self._events.items():
-            bound_f = getattr(self, unbound_f.__name__)
+        for event, f in self._events.items():
+            # Here we try to get a bound method just to get the right
+            # signature in the end. It is overly complicated for what it is
+            # meant, but at least it was a fun exercice. -- halfr
+            if not hasattr(f, '__self__') or f.__self__ != None:
+                bound_f = f
+            else: # f is not bound
+                # try to get bound version of this method
+                bound_f = getattr(self, f.__name__)
             doc[event] = (inspect.getdoc(bound_f) or
                     str(inspect.signature(bound_f)))
 
@@ -375,6 +505,17 @@ class Service(AsynClient):
                     self.log(msg=log_msg)
             return _wrap
 
+        def _config_variable_wrap(update_fun):
+            """Adapter for data received for ConfigVariable."""
+            def _wrap(data):
+                try:
+                    args = json.loads(data.decode())
+                except (UnicodeDecodeError, ValueError):
+                    args = data
+                update_fun(value=args)
+
+            return _wrap
+
         if not self.service_name:
             # service name is class name in lower case
             self.service_name = self.__class__.__name__.lower()
@@ -385,6 +526,16 @@ class Service(AsynClient):
         # Subsribe to all events
         for event_name, callback in self._events.items():
             self.add_subscribe_cb(event_name, _event_wrap(callback))
+
+        # Request base values for ConfigVariables
+        for variable in self._config_variables:
+            req_data = {
+                'section': variable.section,
+                'option': variable.option
+            }
+            req_data_bytes = json.dumps(req_data).encode()
+            req_id = self.request('get', 'config', data=req_data_bytes)
+            self._reply_cb[req_id] = _config_variable_wrap(variable.update)
 
     def run(self):
         """
