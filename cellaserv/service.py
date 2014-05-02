@@ -60,6 +60,7 @@ Example usage:
 """
 
 import asyncore
+import sys
 import inspect
 import json
 import logging
@@ -79,7 +80,15 @@ def _request_to_string(req):
     strfmt = "{r.service_name}[{r.service_identification}].{r.method}({data}) #id={r.id}"
     return strfmt.format(r=req, data=req.data if req.data != b"" else "")
 
-class Variable(threading.Event):
+
+# Keeping the script compatible between python 3.1 and above
+Event = None
+if sys.version_info[1] < 2:
+    Event = threading._Event
+else:
+    Event = threading.Event
+
+class Variable(Event):
     """
     Variables help you share data and states between services.
 
@@ -274,7 +283,7 @@ class Service(AsynClient):
         def _wrapper(method):
             return _set_action(method, method_or_name)
 
-        if callable(method_or_name):
+        if hasattr(method_or_name, '__call__'):
             return _set_action(method_or_name, method_or_name.__name__)
         else:
             return _wrapper
