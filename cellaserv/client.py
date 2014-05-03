@@ -293,7 +293,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
             msg_len = struct.unpack("!I", self._ibuffer)[0]
             self.set_terminator(msg_len)
 
-            self._ibuffer.clear()
+            self._ibuffer = bytearray()
         else:
             self._read_header = True
             self.set_terminator(4)
@@ -301,7 +301,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
             msg = Message()
             msg.ParseFromString(bytes(self._ibuffer))
 
-            self._ibuffer.clear()
+            self._ibuffer = bytearray()
 
             self.on_message_recieved(msg)
 
