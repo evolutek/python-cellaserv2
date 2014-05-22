@@ -119,7 +119,7 @@ else:
 
 if 'callable' not in dir(__builtins__):
     def callable(f):
-        return hasattr(method_or_name, '__call__')
+        return hasattr(f, '__call__')
 
 class Variable(Event):
     """
