@@ -198,7 +198,27 @@ class SynClient(AbstractClient):
     def _send_message(self, msg):
         self._socket.send(struct.pack("!I", len(msg)) + msg)
 
-    ### Actions
+    def read_message(self):
+        """Read a message from the socket."""
+        # Receive message header
+        hdr = self._socket.recv(4)
+        # Header is the size of the message as a uint32 in network byte order
+        msg_len = struct.unpack("!I", hdr)[0]
+
+        # Receive message, which may be in multiple packets so use a loop
+        msg = b""
+        while msg_len != 0:
+            buf = self._socket.recv(msg_len)
+            msg_len -= len(buf)
+            msg += buf
+
+        # Parse message
+        message = Message()
+        message.ParseFromString(msg)
+
+        return message
+
+    # Actions
 
     def request(self, method, service, identification=None, data=None):
         """
@@ -212,21 +232,7 @@ class SynClient(AbstractClient):
 
         # Wait for response
         while True:
-            # Receive message header
-            hdr = self._socket.recv(4)
-            # Header is the size of the message as a uint32 in network byte order
-            msg_len = struct.unpack("!I", hdr)[0]
-
-            # Receive message, which may be in multiple packets so use a loop
-            msg = b""
-            while msg_len != 0:
-                buf = self._socket.recv(msg_len)
-                msg_len -= len(buf)
-                msg += buf
-
-            # Parse message
-            message = Message()
-            message.ParseFromString(msg)
+            message = self.read_message()
 
             if message.type != Message.Reply:
                 # Currentyle Dropping non-reply is not an issue as the
@@ -272,7 +278,10 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         AbstractClient.__init__(self)
 
         # setup asynchat
-        self.set_terminator(4) # first, we are looking for a message header
+        self.set_terminator(4)  # first, we are looking for a message header
+
+        self._socket = sock
+
         # hold incoming data
         self._ibuffer = bytearray()
         self._read_header = True
