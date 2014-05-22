@@ -82,11 +82,11 @@ are pretty useful and simplify writing of services for the user.
 
 from collections import defaultdict
 import asyncore
-import sys
 import inspect
 import json
 import logging
 import os
+import sys
 import threading
 
 from google.protobuf.text_format import MessageToString
@@ -565,7 +565,11 @@ class Service(AsynClient):
         if self.identification:
             log_name += self.service_name + '/' + self.identification
 
+        # Publish log message to cellaserv
         self.publish(log_name, data=json.dumps(kwargs).encode())
+
+        # Also log to stdout
+        logger.Info("[LOG] %s", kwargs)
 
     # Main setup of the service
 
