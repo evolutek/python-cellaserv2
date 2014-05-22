@@ -18,12 +18,12 @@ from collections import defaultdict
 from google.protobuf.text_format import MessageToString
 
 from cellaserv.protobuf.cellaserv_pb2 import (
-        Message,
-        Register,
-        Request,
-        Reply,
-        Publish,
-        Subscribe
+    Message,
+    Register,
+    Request,
+    Reply,
+    Publish,
+    Subscribe
 )
 
 from cellaserv.settings import DEBUG
@@ -35,6 +35,7 @@ logger.setLevel(logging.DEBUG if DEBUG >= 2
 
 # Exceptions
 
+
 class ReplyError(Exception):
     def __init__(self, rep):
         self.rep = rep
@@ -42,11 +43,14 @@ class ReplyError(Exception):
     def __str__(self):
         return MessageToString(self.rep).decode()
 
+
 class RequestTimeout(ReplyError):
     pass
 
+
 class BadArguments(ReplyError):
     pass
+
 
 class NoSuchService(Exception):
     def __init__(self, service):
@@ -54,6 +58,7 @@ class NoSuchService(Exception):
 
     def __str__(self):
         return "No such service: {0}".format(self.service)
+
 
 class NoSuchMethod(Exception):
     def __init__(self, service, method):
@@ -64,6 +69,7 @@ class NoSuchMethod(Exception):
         return "No such method: {0}.{1}".format(self.service, self.method)
 
 # Clients
+
 
 class AbstractClient:
     """Abstract client. Send protobuf messages."""
@@ -104,7 +110,7 @@ class AbstractClient:
         msg.content = reply.SerializeToString()
         self.send_message(msg)
 
-    ### Actions
+    # Actions
 
     def register(self, name, identification=None):
         """Send a ``register`` message.
@@ -112,7 +118,6 @@ class AbstractClient:
         :param str name: Name of the new service
         :param str identification: Optional identification for the service
         :rtype: None"""
-
 
         register = Register(name=name)
         if identification:
@@ -124,13 +129,14 @@ class AbstractClient:
         self.send_message(message)
 
     def request(self, method, service, identification=None, data=None):
-        """Send a ``request`` message.
+        """
+        Send a ``request`` message.
 
         :return: The message id
         :rtype: int"""
 
         logger.info("[Request] %s/%s.%s(%s)", service, identification, method,
-                data)
+                    data)
 
         request = Request(service_name=service, method=method)
         if identification:
@@ -176,8 +182,10 @@ class AbstractClient:
 
         self.send_message(message)
 
+
 class SynClient(AbstractClient):
-    """Synchronous (aka. blocking) cellaserv client.
+    """
+    Synchronous (aka. blocking) cellaserv client.
 
     Wait for ``reply`` after every ``request`` message.
     """
@@ -200,7 +208,7 @@ class SynClient(AbstractClient):
         """
         # Send the request
         req_id = super().request(method=method, service=service,
-            identification=identification, data=data)
+                                 identification=identification, data=data)
 
         # Wait for response
         while True:
@@ -224,7 +232,7 @@ class SynClient(AbstractClient):
                 # Currentyle Dropping non-reply is not an issue as the
                 # SynClient is only used to send queries
                 logger.warning("[Request] Dropping non Reply: "
-                        + MessageToString(message).decode())
+                               + MessageToString(message).decode())
                 continue
 
             # Parse reply
@@ -232,9 +240,8 @@ class SynClient(AbstractClient):
             reply.ParseFromString(message.content)
 
             if reply.id != req_id:
-                logger.warning(
-                        "[Request] Dropping Reply for the wrong request: "
-                        + MessageToString(reply).decode())
+                logger.warning("[Request] Dropping Reply for the wrong "
+                               "request: " + MessageToString(reply).decode())
                 continue
 
             # Check if reply is an error
@@ -254,6 +261,7 @@ class SynClient(AbstractClient):
             logger.debug("Received:\n%s", MessageToString(reply).decode())
 
             return reply.data if reply.HasField('data') else None
+
 
 class AsynClient(asynchat.async_chat, AbstractClient):
     """Asynchronous cellaserv client."""
@@ -351,7 +359,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
         else:
             logger.warning("Invalid message:\n%s",
-                MessageToString(msg).decode())
+                           MessageToString(msg).decode())
 
     def on_request(self, req):
         pass
