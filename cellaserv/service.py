@@ -117,6 +117,10 @@ if sys.version_info[1] < 2:
 else:
     Event = threading.Event
 
+if 'callable' not in dir(__builtins__):
+    def callable(f):
+        return hasattr(method_or_name, '__call__')
+
 class Variable(Event):
     """
     Variables help you share data and states between services.
@@ -367,7 +371,7 @@ class Service(AsynClient):
         def _wrapper(method):
             return _set_action(method, method_or_name)
 
-        if hasattr(method_or_name, '__call__'):
+        if callable(method_or_name):
             return _set_action(method_or_name, method_or_name.__name__)
         else:
             return _wrapper
