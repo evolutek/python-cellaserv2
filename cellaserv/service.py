@@ -742,7 +742,11 @@ class Service(AsynClient):
 
     def _setup_asynchronous(self):
         """
-        Setup the asynchronous part of the service, that is its superclass.
+        Setup the asynchronous part of the service, that is implemented by its
+        superclass.
+
+        When this method returns, the service is ready to be managed by an
+        event loop, and have requests, events, etc. dispatched to it.
         """
 
         def _event_wrap(fun):
