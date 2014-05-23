@@ -88,6 +88,7 @@ import logging
 import os
 import sys
 import threading
+import traceback
 
 from google.protobuf.text_format import MessageToString
 
@@ -555,6 +556,15 @@ class Service(AsynClient):
         os.kill(os.getpid(), 9)
 
     kill._actions = ['kill']
+
+    def stacktraces(self) -> dict:
+        """Return a stacktrace for each thread running."""
+        ret = {}
+        for thread_id, stack in sys._current_frames().items():
+            ret[thread_id] = '\n'.join(traceback.format_stack(stack))
+        return ret
+
+    stacktraces._actions = ['stacktraces']
 
     # Convenience methods
 
