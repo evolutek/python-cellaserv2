@@ -777,7 +777,7 @@ class Service(AsynClient):
 
         # Start threads
         for method in self._threads:
-            threading.Thread(target=method)
+            threading.Thread(target=method, args=(self,)).start()
 
     def run(self):
         """
