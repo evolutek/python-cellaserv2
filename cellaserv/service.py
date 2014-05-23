@@ -652,6 +652,8 @@ class Service(AsynClient):
                 data = syn_client.request('get', 'config', data=req_data_bytes)
                 # Data is json encoded
                 args = self._decode_data(data)
+                logger.info("[ConfigVariable] %s.%s is %s", variable.section,
+                            variable.option, args)
                 # we don't use update() because the context of the service is
                 # not yet initialized, and it is not an update of a previous
                 # value (because there isn't)
@@ -735,10 +737,14 @@ class Service(AsynClient):
                         continue
                 else:
                     logger.error("Dropping non 'new-service' publish: %s",
-                                  MessageToString(pub))
+                                 MessageToString(pub))
             else:
                 logger.error("Dropping unknown message: %s",
                              MessageToString(msg))
+
+        for callbacks in self._service_dependencies.values():
+            for callback in callbacks:
+                callback()
 
     def _setup_asynchronous(self):
         """
