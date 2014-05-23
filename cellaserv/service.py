@@ -289,8 +289,9 @@ class Service(AsynClient):
             return _variable_update
 
         _actions = {}
-        _events = {}
         _config_variables = []
+        _events = {}
+        _threads = []
 
         for name, member in inspect.getmembers(cls):
             if hasattr(member, "_actions"):
@@ -299,6 +300,8 @@ class Service(AsynClient):
             if hasattr(member, "_events"):
                 for event in member._events:
                     _events[event] = member
+            if hasattr(member, "_thread"):
+                _threads.append(member)
 
             if isinstance(member, ConfigVariable):
                 event_name = 'config.{section}.{option}'.format(
@@ -314,10 +317,11 @@ class Service(AsynClient):
                 _events[event_clear] = _var_wrap_clear(member)
 
         cls._actions = _actions
-        cls._events = _events
         cls._config_variables = _config_variables
+        cls._events = _events
+        cls._threads = _threads
 
-        if not hasattr(cls, '_services_dependencies'):
+        if not hasattr(cls, '_service_dependencies'):
             # Force existence of _service_dependencies
             cls._service_dependencies = defaultdict(list)
 
@@ -399,6 +403,17 @@ class Service(AsynClient):
             return _set_event(method_or_name, method_or_name.__name__)
         else:
             return _wrapper
+
+    @classmethod
+    def thread(cls, method):
+        """
+        The method decorated with ``Service.thread`` will run in another
+        thread, aside from the main service thread. It ensure that when the
+        method is called, the service is ready to use.
+        """
+
+        method._thread = True
+        return method
 
     # Instanciated class land
 
@@ -741,6 +756,10 @@ class Service(AsynClient):
 
         # Register the service last
         self.register(self.service_name, self.identification)
+
+        # Start threads
+        for method in self._threads:
+            threading.Thread(target=method)
 
     def run(self):
         """
