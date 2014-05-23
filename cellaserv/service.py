@@ -405,7 +405,6 @@ class Service(AsynClient):
     def __init__(self, identification=None, sock=None):
         self._reply_cb = {}
         self.identification = identification or self.identification
-        self.service_setup_done = threading.Event()
 
         if not sock:
             # Get a socket from cellaserv configuration mechanism
