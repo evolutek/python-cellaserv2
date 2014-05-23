@@ -345,13 +345,17 @@ class Service(AsynClient):
         The service setup() will not return until all services are registered.
         """
 
-        # 'cls' is being created so the first time require() is called we must
-        # create this field
-        if not hasattr(cls, '_service_dependencies'):
-            cls._service_dependencies = defaultdict(list)
-        cls._service_dependencies[depend].append(cb)
 
-        return cls
+        def class_builder(cls):
+            # 'cls' is being created so the first time require() is called we
+            # must create this field
+            if not hasattr(cls, '_service_dependencies'):
+                cls._service_dependencies = defaultdict(list)
+            cls._service_dependencies[depend].append(cb)
+
+            return cls
+
+        return class_builder
 
     # Meta methods decorators
 
