@@ -597,7 +597,7 @@ class Service(AsynClient):
         self.publish(log_name, data=json.dumps(kwargs).encode())
 
         # Also log to stdout
-        logger.Info("[LOG] %s", kwargs)
+        logger.Info("[Log] %s", kwargs)
 
     # Main setup of the service
 
@@ -617,7 +617,7 @@ class Service(AsynClient):
         self._setup_synchronous()
         self._setup_asynchronous()
 
-        logging.debug("Service ready!")
+        logger.info("[Dependencies] Service ready!")
 
     def _setup_synchronous(self):
         """
@@ -711,10 +711,10 @@ class Service(AsynClient):
         for service in services_registered:
             services_unregistered.remove(service['Name'])
 
-        logging.debug("Waiting for %s", services_registered)
-
         # Wait for all service to have registered
         while services_unregistered:
+            logger.debug("[Dependencies] Waiting for %s",
+                         services_unregistered)
             msg = syn_client.read_message()
             if msg.type == Message.Publish:
                 # We are waiting for a pubish or form:
@@ -727,14 +727,14 @@ class Service(AsynClient):
                     service = pub.event.split('.')[3]
                     try:
                         services_unregistered.remove(service)
-                        logging.debug("Waited for %s", service)
+                        logger.debug("[Dependencies] Waited for %s", service)
                     except KeyError:
-                        logging.error("Received a 'new-service' event for"
-                                      "the wrong service: %s",
-                                      MessageToString(msg))
+                        logger.error("Received a 'new-service' event for"
+                                     "the wrong service: %s",
+                                     MessageToString(msg))
                         continue
                 else:
-                    logging.error("Dropping non 'new-service' publish: %s",
+                    logger.error("Dropping non 'new-service' publish: %s",
                                   MessageToString(pub))
             else:
                 logger.error("Dropping unknown message: %s",
