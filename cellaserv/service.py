@@ -5,6 +5,26 @@ Service
 Service allows you to write cellaserv services with high-level decorators:
 Service.action and Service.event.
 
+The @Service.action make a method exported to cellaserv. When matching request
+is received, the method is called. The return value of the method is sent in
+the reply. The return value must be json-encodable. The method must not take
+too long to execute or it will cause cellaserv to send a RequestTimeout error
+instead of your reply.
+
+The @Service.event make the service listen for an event from cellaserv.
+
+Only one @Service.action or @Service.event method can run at the same time
+because there is only one service thread. If you want to have a background job,
+use the @Service.thread decorator.
+
+If you want to send requests to cellaserv, you should use a CellaservProxy
+object, see ``cellaserv.proxy.CellaservProxy``.
+
+You can use ``self('foo')`` to send an event, for more information see the
+documentation for ``Service.__call__``.
+
+You can use ``self.log()`` to produce logs.
+
 Example usage:
 
     >>> from cellaserv.service import Service
@@ -19,18 +39,6 @@ Example usage:
     ...
     >>> s = Foo()
     >>> s.run()
-
-It tries to read the `(HOST, PORT)` configuration from the file called
-`local_settings.py`.
-
-If this file does not exist it tries to read `/etc/conf.d/cellaserv` which as
-the following format::
-
-    [client]
-    host = evolutek.org
-    port = 4200
-
-If this file is not found it defaults to HOST = evolutek.org and PORT = 4200.
 
 Starting more than one service
 ------------------------------
@@ -63,10 +71,23 @@ Dependencies
 You can specify that your service depends on another service using the
 @Service.require('my_other_service') class decorator.
 
+    >>> from cellaserv.service import Service
+    >>> @Service.require('hokuyo')
+    ... class WithDep(Service):
+    ...     pass
+
+When the service is ``setup()``, it will wait for all the dependencies to be
+registered on cellaserv.
+
+Threads
+-------
+
+Service can have multiple threads running at the same time. You can use the
+@Service.thread decorator to register a method to be run in another thread.
+
 TODO
 ----
 
-- implement '@Service.thread' to start a method when the service is ready
 - implement service state notification
 
 Disclaimer
@@ -413,8 +434,18 @@ class Service(AsynClient):
     def thread(cls, method):
         """
         The method decorated with ``Service.thread`` will run in another
-        thread, aside from the main service thread. It ensure that when the
-        method is called, the service is ready to use.
+        thread, aside from the main service thread. The thread is automatically
+        started when the service is ready to use.
+
+        Example::
+
+            >>> from cellaserv.service import Service
+            >>> from time import sleep
+            >>> class Foo(Service):
+            ...     @Service.thread
+            ...     def loop(self):
+            ...         while not sleep(1):
+            ...             print("hello!")
         """
 
         method._thread = True
@@ -581,7 +612,8 @@ class Service(AsynClient):
         Send a publish message.
 
         :param event str: Event name
-        :param **kwargs: Data sent along the publish message, encoded in json.
+        :param **kwargs: Data sent along the publish message, will be encoded
+                         in json.
         """
         self.publish(event, data=json.dumps(kwargs).encode())
 
