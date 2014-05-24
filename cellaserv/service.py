@@ -530,7 +530,11 @@ class Service(AsynClient):
             # remove the first parameter (class name).
             bound_f = getattr(self, f_name)
             doc = inspect.getdoc(bound_f)
-            sig = action_name + str(inspect.signature(bound_f))
+            try:
+                sig = action_name + str(inspect.signature(bound_f))
+            except AttributeError:  # because python 3.1 fuck you
+                sig = action_name + \
+                      inspect.formatargspec(*inspect.getfullargspec(foo))
             docs[action_name] = {'doc': doc, 'sig': sig}
         return docs
 
