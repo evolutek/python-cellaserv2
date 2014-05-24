@@ -627,7 +627,7 @@ class Service(AsynClient):
         """
         log_name = 'log.' + self.service_name
         if self.identification:
-            log_name += self.service_name + '/' + self.identification
+            log_name += '.' + self.identification
 
         # Publish log message to cellaserv
         self.publish(log_name, data=json.dumps(kwargs).encode())
