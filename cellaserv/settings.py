@@ -11,28 +11,24 @@ config = configparser.ConfigParser()
 config.read(['/etc/conf.d/cellaserv'])
 
 try:
-    HOST = os.environ.get("CS_HOST", config.get("client", "host",
-                                                fallback="evolutek.org"))
+    HOST = config.get("client", "host")
 except:
-    HOST = "evolutek.org"
+    HOST = os.environ.get("CS_HOST", "evolutek.org")
 
 try:
-    PORT = int(os.environ.get("CS_PORT", config.get("client", "port",
-                                                    fallback=4200)))
+    PORT = int(config.get("client", "port"))
 except:
-    PORT = 4200
+    PORT = int(os.environ.get("CS_PORT", 4200))
 
 try:
-    DEBUG = int(os.environ.get("CS_DEBUG", config.get("client", "debug",
-                                                      fallback=0)))
+    DEBUG = int(config.get("client", "debug"))
 except:
-    DEBUG = 0
+    DEBUG = int(os.environ.get("CS_DEBUG", 0))
 
 try:
-    ROBOT = os.environ.get("CS_ROBOT", config.get("client", "robot",
-                                                  fallback=None))
+    ROBOT = config.get("client", "robot")
 except:
-    ROBOT = None
+    ROBOT = os.environ.get("CS_ROBOT", None)
 
 
 def get_socket():
