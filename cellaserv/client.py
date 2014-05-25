@@ -352,10 +352,14 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
             # Basic subscriptions
             for cb in self._events_cb[pub.event]:
-                if pub.HasField('data'):
-                    cb(pub.data)
-                else:
-                    cb()
+                try:
+                    if pub.HasField('data'):
+                        cb(pub.data)
+                    else:
+                        cb()
+                except Exception as e:
+                    logger.error("Exception during %s", MessageToString(req),
+                            exc_info=True)
 
             # Pattern subscriptions
             for pattern, cb_list in self._events_pattern_cb.items():
