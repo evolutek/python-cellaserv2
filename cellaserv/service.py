@@ -577,7 +577,7 @@ class Service(AsynClient):
                 sig = action_name + str(inspect.signature(bound_f))
             except AttributeError:  # because python 3.1 fuck you
                 sig = action_name + \
-                      inspect.formatargspec(*inspect.getfullargspec(foo))
+                      inspect.formatargspec(*inspect.getfullargspec(bound_f))
             docs[action_name] = {'doc': doc, 'sig': sig}
         return docs
 
@@ -595,8 +595,12 @@ class Service(AsynClient):
             else:  # f is not bound
                 # try to get bound version of this method
                 bound_f = getattr(self, f.__name__)
-            doc[event] = (inspect.getdoc(bound_f)
-                          or str(inspect.signature(bound_f)))
+            try:
+                doc[event] = (inspect.getdoc(bound_f)
+                              or str(inspect.signature(bound_f)))
+            except AttributeError:  # python3.1 does not have signature
+                doc[event] = inspect.formatargspec(
+                        *inspect.getfullargspec(bound_f))
 
         return doc
 
