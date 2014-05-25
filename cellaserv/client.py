@@ -12,6 +12,7 @@ import fnmatch
 import logging
 import random
 import struct
+import threading
 
 from collections import defaultdict
 
@@ -277,6 +278,8 @@ class AsynClient(asynchat.async_chat, AbstractClient):
         asynchat.async_chat.__init__(self, sock=sock)
         AbstractClient.__init__(self)
 
+        self.push_lock = threading.Lock()
+
         # setup asynchat
         self.set_terminator(4)  # first, we are looking for a message header
 
@@ -292,7 +295,8 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def _send_message(self, msg):
         # 'push' is asynchat version of socket.send
-        self.push(struct.pack("!I", len(msg)) + msg)
+        with self.push_lock:
+            self.push(struct.pack("!I", len(msg)) + msg)
 
     # Asyncore methods
 
