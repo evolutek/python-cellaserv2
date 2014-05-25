@@ -372,7 +372,12 @@ class Service(AsynClient):
             # must create this field
             if not hasattr(cls, '_service_dependencies'):
                 cls._service_dependencies = defaultdict(list)
-            cls._service_dependencies[depend].append(cb)
+
+            if cb:
+                cls._service_dependencies[depend].append(cb)
+            else:
+                # this will create an entry in the dict if it does not exists
+                cls._service_dependencies[depend]
 
             return cls
 
