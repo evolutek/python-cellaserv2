@@ -225,7 +225,7 @@ class ConfigVariable:
         ...         self.color_coef = 1 if value == "red" else -1
     """
 
-    def __init__(self, section, option):
+    def __init__(self, section, option, coerc=str):
         """
         Define a new config variable using the 'config service'.
 
@@ -233,11 +233,14 @@ class ConfigVariable:
             etc.)
         :param option str: The option corresponding to this variable in the
             section.
+        :param coerc function: The value will by passed to this function and
+            the result will be the final value.
         """
         self.section = section
         self.option = option
         self.update_cb = []
         self.value = None
+        self.coerc = coerc
 
     def add_update_cb(self, cb):
         """
@@ -256,9 +259,13 @@ class ConfigVariable:
         """
         logger.debug("Variable %s.%s updated: %s",
                      self.section, self.option, value)
-        self.value = value
+        self.value = self.coerc(value)
         for cb in self.update_cb:
-            cb(value)
+            cb(self.value)
+
+    def set(self, value):
+        """set(value) is called when setting the value, not updating it."""
+        self.value = self.coerc(value)
 
     def __call__(self):
         """
@@ -698,7 +705,7 @@ class Service(AsynClient):
                 # we don't use update() because the context of the service is
                 # not yet initialized, and it is not an update of a previous
                 # value (because there isn't)
-                variable.value = args
+                variable.set(args)
             return on_config_registered
 
         # When the service 'config' is available, request base values for
