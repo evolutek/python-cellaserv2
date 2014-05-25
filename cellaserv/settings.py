@@ -28,6 +28,13 @@ try:
 except:
     DEBUG = 0
 
+try:
+    ROBOT = os.environ.get("CS_ROBOT", config.get("client", "robot",
+                                                  fallback=None))
+except:
+    ROBOT = None
+
+
 def get_socket():
     """Open a socket to cellaserv using user configuration."""
     return socket.create_connection((HOST, PORT))
