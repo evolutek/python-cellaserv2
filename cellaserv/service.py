@@ -644,9 +644,6 @@ class Service(AsynClient):
         # Publish log message to cellaserv
         self.publish(log_name, data=json.dumps(kwargs).encode())
 
-        # Also log to stdout
-        logger.info("[Log] %s", kwargs)
-
     # Main setup of the service
 
     def setup(self):
