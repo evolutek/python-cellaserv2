@@ -638,7 +638,7 @@ class Service(AsynClient):
         self.publish(log_name, data=json.dumps(kwargs).encode())
 
         # Also log to stdout
-        logger.Info("[Log] %s", kwargs)
+        logger.info("[Log] %s", kwargs)
 
     # Main setup of the service
 
