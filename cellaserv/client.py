@@ -292,8 +292,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
 
     def _send_message(self, msg):
         # 'push' is asynchat version of socket.send
-        self.push(struct.pack("!I", len(msg)))
-        self.push(msg)
+        self.push(struct.pack("!I", len(msg)) + msg)
 
     # Asyncore methods
 
