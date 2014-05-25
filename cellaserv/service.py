@@ -752,7 +752,8 @@ class Service(AsynClient):
         # Go JSON's implementation sends null for the empty slice
         services_registered = self._decode_data(data) or []
         for service in services_registered:
-            services_unregistered.remove(service['Name'])
+            if service['Name'] in services_unregistered:
+                services_unregistered.remove(service['Name'])
 
         # Wait for all service to have registered
         while services_unregistered:
