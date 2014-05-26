@@ -10,25 +10,33 @@ logging.basicConfig()
 config = configparser.ConfigParser()
 config.read(['/etc/conf.d/cellaserv'])
 
+HOST = "evolutek.org"
 try:
     HOST = config.get("client", "host")
 except:
-    HOST = os.environ.get("CS_HOST", "evolutek.org")
+    pass
+HOST = os.environ.get("CS_HOST", HOST)
 
+PORT = 4200
 try:
     PORT = int(config.get("client", "port"))
 except:
-    PORT = int(os.environ.get("CS_PORT", 4200))
+    pass
+PORT = int(os.environ.get("CS_PORT", PORT))
 
+DEBUG = 0
 try:
     DEBUG = int(config.get("client", "debug"))
 except:
-    DEBUG = int(os.environ.get("CS_DEBUG", 0))
+    pass
+DEBUG = int(os.environ.get("CS_DEBUG", DEBUG))
 
+ROBOT = None
 try:
     ROBOT = config.get("client", "robot")
 except:
-    ROBOT = os.environ.get("CS_ROBOT", None)
+    pass
+ROBOT = os.environ.get("CS_ROBOT", ROBOT)
 
 
 def get_socket():
