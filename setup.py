@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name='python-cellaserv2',
-    version='5',
+    version='git',
     url='code.evolutek.org/python-cellaserv2',
     description='Python client for cellaserv2',
     author='Remi Audebert - Evolutek 2013-2014',
