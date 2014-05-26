@@ -361,7 +361,7 @@ class AsynClient(asynchat.async_chat, AbstractClient):
                     else:
                         cb()
                 except Exception as e:
-                    logger.error("Exception during %s", MessageToString(req),
+                    logger.error("Exception during %s", MessageToString(msg),
                             exc_info=True)
 
             # Pattern subscriptions
