@@ -765,8 +765,8 @@ class Service(AsynClient):
 
         # Wait for all service to have registered
         while services_unregistered:
-            logger.debug("[Dependencies] Waiting for %s",
-                         services_unregistered)
+            logger.info("[Dependencies] Waiting for %s",
+                        services_unregistered)
             msg = syn_client.read_message()
             if msg.type == Message.Publish:
                 # We are waiting for a pubish or form:
@@ -779,7 +779,7 @@ class Service(AsynClient):
                     service = pub.event.split('.')[3]
                     try:
                         services_unregistered.remove(service)
-                        logger.debug("[Dependencies] Waited for %s", service)
+                        logger.info("[Dependencies] Waited for %s", service)
                     except KeyError:
                         logger.error("Received a 'new-service' event for"
                                      "the wrong service: %s",
