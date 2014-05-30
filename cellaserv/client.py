@@ -61,6 +61,17 @@ class NoSuchService(Exception):
         return "No such service: {0}".format(self.service)
 
 
+class NoSuchIdentification(Exception):
+    def __init__(self, service, identification):
+        self.service = service
+        self.identification = identification
+
+    def __str__(self):
+        return "No such service identification: {0}.{1}".format(
+            self.service,
+            self.identification)
+
+
 class NoSuchMethod(Exception):
     def __init__(self, service, method):
         self.service = service
@@ -258,6 +269,8 @@ class SynClient(AbstractClient):
                     raise RequestTimeout(reply)
                 elif reply.error.type == Reply.Error.NoSuchService:
                     raise NoSuchService(service)
+                elif reply.error.type == Reply.Error.InvalidIdentification:
+                    raise NoSuchIdentification(service, identification)
                 elif reply.error.type == Reply.Error.NoSuchMethod:
                     raise NoSuchMethod(service, method)
                 elif reply.error.type == Reply.Error.BadArguments:
