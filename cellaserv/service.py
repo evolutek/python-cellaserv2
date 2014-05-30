@@ -747,21 +747,29 @@ class Service(AsynClient):
             # No dependencies, return early
             return
 
-        # First register for new services, so that we don't loose a service if
-        # it register just after the 'list-services' call.
-        for service in self._service_dependencies:
-            syn_client.subscribe('log.cellaserv.new-service.' + service)
-
         # The set of services we are waiting.
-        services_unregistered = set(self._service_dependencies.keys())
+        services_unregistered = set()
+        for service in self._service_dependencies.keys():
+            name_ident = service.split('.', 1)
+            if len(name_ident) == 2:
+                services_unregistered.add(tuple(name_ident))
+            else:
+                services_unregistered.add(tuple([name_ident[0], '']))
+
+            # First register for new services, so that we don't miss a service
+            # if it registers just after the 'list-services' call.
+            for service in self._service_dependencies:
+                syn_client.subscribe('log.cellaserv.new-service.' +
+                                     name_ident[0])
 
         # Get the list of already registered service.
         data = syn_client.request('list-services', 'cellaserv')
         # Go JSON's implementation sends null for the empty slice
         services_registered = self._decode_data(data) or []
         for service in services_registered:
-            if service['Name'] in services_unregistered:
-                services_unregistered.remove(service['Name'])
+            service_ident = (service['Name'], service['Identification'])
+            if service_ident in services_unregistered:
+                services_unregistered.remove(service_ident)
 
         # Wait for all service to have registered
         while services_unregistered:
@@ -776,10 +784,11 @@ class Service(AsynClient):
                 pub = Publish()
                 pub.ParseFromString(msg.content)
                 if pub.event.startswith('log.cellaserv.new-service.'):
-                    service = pub.event.split('.')[3]
+                    data = json.loads(pub.data.decode())
+                    name_ident = (data['Name'], data['Identification'])
                     try:
-                        services_unregistered.remove(service)
-                        logger.info("[Dependencies] Waited for %s", service)
+                        services_unregistered.remove(name_ident)
+                        logger.info("[Dependencies] Waited for %s", name_ident)
                     except KeyError:
                         logger.error("Received a 'new-service' event for"
                                      "the wrong service: %s",
