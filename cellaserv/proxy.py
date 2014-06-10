@@ -88,7 +88,12 @@ class CellaservProxy():
         if client:
             self.client = client
         else:
-            self.socket = cellaserv.settings.get_socket()
+            if not host:
+                host = cellaserv.settings.HOST
+            if not port:
+                port = cellaserv.settings.PORT
+
+            self.socket = socket.create_connection((host, port))
             self.client = cellaserv.client.SynClient(self.socket)
 
     def __getattr__(self, service_name):
