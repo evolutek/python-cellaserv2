@@ -20,6 +20,7 @@ import socket
 import cellaserv.client
 import cellaserv.settings
 
+
 class ActionProxy:
     """Action proxy for cellaserv."""
 
@@ -50,6 +51,7 @@ class ActionProxy:
                                            {'action': self.action}))
         return raw_data.decode("utf8")
 
+
 class ServiceProxy:
     """Service proxy for cellaserv."""
 
@@ -63,7 +65,7 @@ class ServiceProxy:
             return super().__getattr__(action)
 
         action = ActionProxy(action, self.service_name, self.identification,
-                self.client)
+                             self.client)
         return action
 
     def __getitem__(self, identification):
@@ -75,6 +77,7 @@ class ServiceProxy:
     def getdoc(self):
         raw_data = self.client.request('help', service=self.service_name)
         return raw_data.decode("utf8")
+
 
 class CellaservProxy():
     """Proxy class for cellaserv."""
