@@ -143,6 +143,7 @@ if 'callable' not in dir(__builtins__):
     def callable(f):
         return hasattr(f, '__call__')
 
+
 class Variable(Event):
     """
     Variables help you share data and states between services.
@@ -296,7 +297,6 @@ class Service(AsynClient):
         Basic level of metaprogramming magic.
         """
 
-        # XXX: Why do we use wrappers, doesn't simple class methods work?
         def _var_wrap_set(variable):
             def _variable_set(self, **kwargs):
                 logger.debug("Variable %s set, data=%s", variable.name, kwargs)
@@ -322,6 +322,8 @@ class Service(AsynClient):
         _events = {}
         _threads = []
 
+        # Go through all the members of the class, check if they are tagged as
+        # action, events, etc. Wrap them if necessary then store them in lists.
         for name, member in inspect.getmembers(cls):
             if hasattr(member, "_actions"):
                 for action in member._actions:
@@ -372,7 +374,6 @@ class Service(AsynClient):
 
         The service setup() will not return until all services are registered.
         """
-
 
         def class_builder(cls):
             # 'cls' is being created so the first time require() is called we
