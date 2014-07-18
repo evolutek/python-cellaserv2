@@ -577,11 +577,14 @@ class Service(AsynClient, metaclass=ServiceMeta):
             # remove the first parameter (class name).
             bound_f = getattr(self, f_name)
             doc = inspect.getdoc(bound_f)
-            try:
-                sig = action_name + str(inspect.signature(bound_f))
-            except AttributeError:  # because python 3.1 fuck you
+
+            # Get signature of this method, ie. how the use must call it
+            if sys.version_info.minor < 3:
                 sig = action_name + \
                       inspect.formatargspec(*inspect.getfullargspec(bound_f))
+            else:
+                sig = action_name + str(inspect.signature(bound_f))
+
             docs[action_name] = {'doc': doc, 'sig': sig}
         return docs
 
