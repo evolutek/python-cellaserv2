@@ -18,11 +18,6 @@ class Date(Service):
     def say(self, what="world"):
         print("hello", what)
 
-    @Service.event
-    def kill(self):
-        import sys
-        sys.exit(0)
-
 def main():
     date_service = Date()
     date_service.run()
