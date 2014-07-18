@@ -277,19 +277,11 @@ class ConfigVariable:
         return self.value
 
 
-class Service(AsynClient):
+class ServiceMeta(type):
 
-    # Mandatory name of the service as it will appeared for cellaserv.
-    service_name = None
-    # Optional identification string used to register multiple instances of the
-    # same service.
-    identification = None
-
-    # Meta
-
-    def __new__(cls, *args, **kwargs):
+    def __init__(cls, name, bases, nmspc):
         """
-        ``__new__`` is called when a new instance of Service is created.
+        ``__init__()`` is called when a new type of Service is needed.
 
         This method setup the list of actions (cls._actions) and subscribed
         events (cls._event) in the new class.
@@ -356,9 +348,40 @@ class Service(AsynClient):
             # Force existence of _service_dependencies
             cls._service_dependencies = defaultdict(list)
 
-        return super(Service, cls).__new__(cls)
+        return super().__init__(cls)
 
-    # Meta class decorator
+
+class Service(AsynClient, metaclass=ServiceMeta):
+
+    # Mandatory name of the service as it will appeared for cellaserv.
+    service_name = None
+    # Optional identification string used to register multiple instances of the
+    # same service.
+    identification = None
+
+    # Protocol helpers
+
+    @staticmethod
+    def _decode_msg_data(msg):
+        """Return the data contained in a message."""
+        if msg.HasField('data'):
+            return Service._decode_data(msg.data)
+        else:
+            return {}
+
+    @staticmethod
+    def _decode_data(data):
+        """Returns the data contained in a message."""
+        try:
+            obj = data.decode()
+            return json.loads(obj)
+        except (UnicodeDecodeError, ValueError):
+            # In case the data cannot be decoded, return raw data.
+            # This "feature" can be used to communicate with services that
+            # don't handle json data, but only raw bytes.
+            return data
+
+    # Class decorators
 
     @classmethod
     def require(cls, depend, cb=None):
@@ -391,10 +414,10 @@ class Service(AsynClient):
 
         return class_builder
 
-    # Meta methods decorators
+    # Methods decorators
 
-    @classmethod
-    def action(cls, method_or_name):
+    @staticmethod
+    def action(method_or_name):
         """
         Use the ``Service.action`` decorator on a method to declare it as
         exported to cellaserv. If a parameter is given, change the name of the
@@ -419,8 +442,8 @@ class Service(AsynClient):
         else:
             return _wrapper
 
-    @classmethod
-    def event(cls, method_or_name):
+    @staticmethod
+    def event(method_or_name):
         """
         The method decorated with ``Service.event`` will be called when a event
         matching its name (or argument passed to ``Service.event``) will be
@@ -443,8 +466,8 @@ class Service(AsynClient):
         else:
             return _wrapper
 
-    @classmethod
-    def thread(cls, method):
+    @staticmethod
+    def thread(method):
         """
         The method decorated with ``Service.thread`` will run in another
         thread, aside from the main service thread. The thread is automatically
@@ -474,28 +497,6 @@ class Service(AsynClient):
             # Get a socket from cellaserv configuration mechanism
             sock = cellaserv.settings.get_socket()
         self._socket = sock
-
-    # Protocol helpers
-
-    @classmethod
-    def _decode_msg_data(cls, msg):
-        """Return the data contained in a message."""
-        if msg.HasField('data'):
-            return cls._decode_data(msg.data)
-        else:
-            return {}
-
-    @classmethod
-    def _decode_data(cls, data):
-        """Returns the data contained in a message."""
-        try:
-            obj = data.decode()
-            return json.loads(obj)
-        except (UnicodeDecodeError, ValueError):
-            # In case the data cannot be decoded, return raw data.
-            # This "feature" can be used to communicate with services that
-            # don't handle json data, but only raw bytes.
-            return data
 
     # Override methods of cellaserv.client.AsynClient
 
@@ -853,8 +854,8 @@ class Service(AsynClient):
         self.setup()
         Service.loop()
 
-    @classmethod
-    def loop(cls):
+    @staticmethod
+    def loop():
         """
         loop() will start the asyncore engine therefore, if you have not
         started another thread, only callbacks (eg. actions, events) will be
