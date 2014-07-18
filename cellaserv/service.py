@@ -531,7 +531,9 @@ class Service(AsynClient, metaclass=ServiceMeta):
         try:
             logger.debug("Calling %s/%s.%s(%s)...",
                          self.service_name, self.identification, method, data)
-            reply_data = callback(self, **data)
+            # We use the desciptor's __get__ because we don't know if the
+            # callback should be bound to this instance
+            reply_data = callback.__get__(self, type(self))(**data)
             logger.debug("Called  %s/%s.%s(%s) = %s",
                          self.service_name, self.identification, method, data,
                          reply_data)
@@ -589,25 +591,21 @@ class Service(AsynClient, metaclass=ServiceMeta):
         """List subscribed events of this service."""
         doc = {}
         for event, f in self._events.items():
-            # Here we try to get a bound method just to get the right
-            # signature in the end. It is overly complicated for what it is
-            # meant, but at least it was a fun exercice. -- halfr
-            if not hasattr(f, '__self__') or f.__self__ is not None:
-                bound_f = f
-            else:  # f is not bound
-                # try to get bound version of this method
-                bound_f = getattr(self, f.__name__)
-            try:
-                doc[event] = (inspect.getdoc(bound_f)
-                              or str(inspect.signature(bound_f)))
-            except AttributeError:  # python3.1 does not have signature
+            bound_f = getattr(self, f.__name__)
+
+            if sys.version_info.minor < 3:
                 doc[event] = inspect.formatargspec(
                         *inspect.getfullargspec(bound_f))
+            else:
+                doc[event] = (inspect.getdoc(bound_f)
+                              or str(inspect.signature(bound_f)))
 
         return doc
 
     help_events._actions = ['help_events']
 
+    # Note: we cannot use @staticmethod here because the descriptor it creates
+    # is shadowing the attribute we add to the method.
     def kill(self) -> "Does not return.":
         """Kill the service."""
         os.kill(os.getpid(), 9)
