@@ -793,7 +793,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
                         services_unregistered.remove(name_ident)
                         logger.info("[Dependencies] Waited for %s", name_ident)
                     except KeyError:
-                        logger.error("Received a 'new-service' event for"
+                        logger.error("Received a 'new-service' event for "
                                      "the wrong service: %s",
                                      MessageToString(msg))
                         continue
