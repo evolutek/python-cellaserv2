@@ -31,14 +31,16 @@ except:
     pass
 DEBUG = int(os.environ.get("CS_DEBUG", DEBUG))
 
-ROBOT = None
-try:
-    ROBOT = config.get("client", "robot")
-except:
-    pass
-ROBOT = os.environ.get("CS_ROBOT", ROBOT)
-
 
 def get_socket():
     """Open a socket to cellaserv using user configuration."""
     return socket.create_connection((HOST, PORT))
+
+
+def main():
+    print("HOST: " + HOST)
+    print("PORT: " + str(PORT))
+    print("DEBUG: " + str(DEBUG))
+
+if __name__ == '__main__':
+    main()
