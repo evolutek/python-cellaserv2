@@ -100,6 +100,12 @@ class AbstractClient:
         raise NotImplementedError
 
     def reply_to(self, req, data=None):
+        """
+        Send a reply to the request req, with optional data in the reply.
+
+        :param Request req: the original request
+        :param bytes data: optional data to put in the reply
+        """
         reply = Reply()
         reply.id = req.id
         if data:
@@ -110,6 +116,13 @@ class AbstractClient:
         self.send_message(msg)
 
     def reply_error_to(self, req, error_type, what=None):
+        """
+        Send an error reply to the request ``req``.
+
+        :param Request req: The original request.
+        :param Reply.Error error_type: An error code.
+        :param bytes what: an error message.
+        """
         error = Reply.Error()
         error.type = error_type
         if what is not None:
@@ -125,11 +138,12 @@ class AbstractClient:
     # Actions
 
     def register(self, name, identification=None):
-        """Send a ``register`` message.
+        """
+        Send a ``register`` message.
 
-        :param str name: Name of the new service
-        :param str identification: Optional identification for the service
-        :rtype: None"""
+        :param str name: Name of the new service.
+        :param str identification: Optional identification for the service.
+        """
 
         register = Register(name=name)
         if identification:
@@ -144,8 +158,12 @@ class AbstractClient:
         """
         Send a ``request`` message.
 
-        :return: The message id
-        :rtype: int"""
+        :param str method: The name of the method.
+        :param str service: The name of th service.
+        :return: The id of the message that was sent. Used for tracking the
+            reply.
+        :rtype: int
+        """
 
         logger.info("[Request] %s/%s.%s(%s)", service, identification, method,
                     data)
@@ -166,10 +184,12 @@ class AbstractClient:
         return request.id
 
     def publish(self, event, data=None):
-        """Send a ``publish`` message.
+        """
+        Send a ``publish`` message.
 
         :param event str: The event name
-        :param data bytes: Optional data sent with the event"""
+        :param data bytes: Optional data sent with the event
+        """
 
         logger.info("[Publish] %s(%s)", event, data)
 
@@ -183,7 +203,11 @@ class AbstractClient:
         self.send_message(message)
 
     def subscribe(self, event):
-        """Send a ``subscribe`` message."""
+        """
+        Send a ``subscribe`` message.
+
+        :param str event: The name of the event
+        """
 
         logger.info("[Subscribe] %s", event)
 
@@ -234,7 +258,7 @@ class SynClient(AbstractClient):
 
     def request(self, method, service, identification=None, data=None):
         """
-        Blocking ``request``.
+        Send a blocking ``request``.
 
         Send the ``request`` message, then wait for the reply.
         """
