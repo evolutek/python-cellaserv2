@@ -27,7 +27,7 @@ from cellaserv.protobuf.cellaserv_pb2 import (
     Subscribe
 )
 
-from cellaserv.settings import DEBUG
+from cellaserv.settings import DEBUG, get_socket
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if DEBUG >= 2
@@ -226,10 +226,10 @@ class SynClient(AbstractClient):
     Wait for ``reply`` after every ``request`` message.
     """
 
-    def __init__(self, sock):
+    def __init__(self, sock=None):
         super().__init__()
 
-        self._socket = sock
+        self._socket = sock or get_socket()
 
     def _send_message(self, msg):
         self._socket.send(struct.pack("!I", len(msg)) + msg)
@@ -310,17 +310,17 @@ class SynClient(AbstractClient):
 class AsynClient(asynchat.async_chat, AbstractClient):
     """Asynchronous cellaserv client."""
 
-    def __init__(self, sock):
+    def __init__(self, sock=None):
+        self._socket = sock or get_socket()
+
         # Init base classes
-        asynchat.async_chat.__init__(self, sock=sock)
+        asynchat.async_chat.__init__(self, sock=self._socket)
         AbstractClient.__init__(self)
 
         self.push_lock = threading.Lock()
 
         # setup asynchat
         self.set_terminator(4)  # first, we are looking for a message header
-
-        self._socket = sock
 
         # hold incoming data
         self._ibuffer = bytearray()
