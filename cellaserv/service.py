@@ -44,7 +44,7 @@ Starting more than one service
 
 It is sometime preferable to start multiple services at the same time, for
 example the same service but with different identifications. In this case you
-will instanciate multiple services, call setup() on each of this services and
+will instanciate multiple services, call _setup() on each of this services and
 then give control to the async loop with Service.loop().
 
 Example usage:
@@ -60,7 +60,7 @@ Example usage:
     ...
     >>> services = [Bar(i) for i in range(10)]
     >>> for s in services:
-    ...    s.setup()
+    ...    s._setup()
     ...
     >>> Service.loop()
 
@@ -75,8 +75,8 @@ You can specify that your service depends on another service using the
     ... class WithDep(Service):
     ...     pass
 
-When the service is ``setup()``, it will wait for all the dependencies to be
-registered on cellaserv.
+When the service ``_setup()`` is run, it will wait for all the dependencies to
+be registered on cellaserv.
 
 Threads
 -------
@@ -663,9 +663,9 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     # Main setup of the service
 
-    def setup(self):
+    def _setup(self):
         """
-        setup() will use the socket connected to cellaserv to initialize the
+        _setup() will use the socket connected to cellaserv to initialize the
         service.
 
         Use this if you want to setup multiple service before running
@@ -745,7 +745,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
         In the class, we setup a dictionary of services names that maps to a
         list of functions that will be called when the service is available.
 
-        When the service setup() method is called a SynClient is used to:
+        When the service _setup() method is called a SynClient is used to:
 
         - for each dependency 'S', subscribe to 'new-service.S'
         - request the service 'cellaserv' for the list of currently connected
@@ -848,21 +848,23 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
         # Subsribe to all events
         for event_name, callback in self._events.items():
-            self.add_subscribe_cb(event_name, _event_wrap(callback))
+            callback_bound = callback.__get__(self, type(self))
+            self.add_subscribe_cb(event_name, _event_wrap(callback_bound))
 
         # Register the service last
         self.register(self.service_name, self.identification)
 
         # Start threads
         for method in self._threads:
-            threading.Thread(target=method, args=(self,)).start()
+            method_bound = method.__get__(self, type(self))
+            threading.Thread(target=method_bound).start()
 
     def run(self):
         """
         One-shot method to setup and start the service at the same time. This
         is the method you will use 90% of the time to start your service.
         """
-        self.setup()
+        self._setup()
         Service.loop()
 
     @staticmethod
