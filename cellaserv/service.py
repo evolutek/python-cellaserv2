@@ -20,10 +20,9 @@ use the @Service.thread decorator.
 If you want to send requests to cellaserv, you should use a CellaservProxy
 object, see ``cellaserv.proxy.CellaservProxy``.
 
-You can use ``self('foo')`` to send an event, for more information see the
-documentation for ``Service.__call__``.
+You can use ``self.publish('event_name')`` to send an event.
 
-You can use ``self.log()`` to produce logs.
+You can use ``self.log()`` to produce log entries for your service.
 
 Example usage:
 
@@ -104,6 +103,7 @@ are pretty useful and simplify writing of services for the user.
 from collections import defaultdict
 import asyncore
 import inspect
+import io
 import json
 import logging
 import os
@@ -624,7 +624,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     # Convenience methods
 
-    def __call__(self, event, **kwargs):
+    def publish(self, event, **kwargs):
         """
         Send a publish message.
 
@@ -632,22 +632,34 @@ class Service(AsynClient, metaclass=ServiceMeta):
         :param **kwargs: Data sent along the publish message, will be encoded
                          in json.
         """
-        self.publish(event, data=json.dumps(kwargs).encode())
+        super().publish(event, data=json.dumps(kwargs).encode())
 
-    def log(self, **kwargs):
+    def log(self, *args, what=None, **log_data):
         """
         Send a log message to cellaserv using the service's name and
-        identification if any.
+        identification, if any. ``what`` is an optional topic for the log. If
+        provided, it will we appened to the log name.
 
         Logs in cellaserv are implemented using event with the form
-        ``log.<what>``.
+        ``log.<service_name>.<optional service_ident>.<optional what>``.
         """
         log_name = 'log.' + self.service_name
+
         if self.identification:
             log_name += '.' + self.identification
 
+        if what:
+            log_name += '.' + what
+
+        if args:
+            # Emulate a call to print()
+            out = io.StringIO()
+            print(*args, end='', file=out)
+            out.seek(0)
+            log_data['msg'] = out.read()
+
         # Publish log message to cellaserv
-        self.publish(log_name, data=json.dumps(kwargs).encode())
+        self.publish(event=log_name, **log_data)
 
     # Main setup of the service
 
