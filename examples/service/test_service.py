@@ -12,9 +12,9 @@ class Test(Service):
 
 def main():
     tf = Test("foo")
-    tf.setup()
+    tf._setup()
     tb = Test("bar")
-    tb.setup()
+    tb._setup()
 
     Service.loop()
 
