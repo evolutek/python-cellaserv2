@@ -344,9 +344,7 @@ class ServiceMeta(type):
         cls._events = _events
         cls._threads = _threads
 
-        if not hasattr(cls, '_service_dependencies'):
-            # Force existence of _service_dependencies
-            cls._service_dependencies = defaultdict(list)
+        cls._service_dependencies = defaultdict(list)
 
         return super().__init__(cls)
 
