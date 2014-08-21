@@ -15,6 +15,8 @@ setup(
 
     packages=['cellaserv', 'cellaserv.protobuf'],
 
+    test_requires=['pytest', 'pytest-timeout'],
+
     classifiers=[
         'Programming Language :: Python :: 3.1',
         'Programming Language :: Python :: 3.2',
