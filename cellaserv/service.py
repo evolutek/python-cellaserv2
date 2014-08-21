@@ -74,6 +74,10 @@ You can specify that your service depends on another service using the
     >>> @Service.require('hokuyo')
     ... class WithDep(Service):
     ...     pass
+    >>> # You can also specify a identification
+    >>> @Service.require('hokuyo', identification='table')
+    ... class WithDep2(Service):
+    ...     pass
 
 When the service ``_setup()`` is run, it will wait for all the dependencies to
 be registered on cellaserv.
@@ -283,7 +287,7 @@ class ServiceMeta(type):
         """
         ``__init__()`` is called when a new type of Service is needed.
 
-        This method setup the list of actions (cls._actions) and subscribed
+        This method setups the list of actions (cls._actions) and subscribed
         events (cls._event) in the new class.
 
         Basic level of metaprogramming magic.
@@ -382,26 +386,23 @@ class Service(AsynClient, metaclass=ServiceMeta):
     # Class decorators
 
     @classmethod
-    def require(cls, depend, cb=None):
+    def require(cls, service, identification="", cb=None):
         """
         Use the ``Service.require`` class decorator to specify a dependency
-        between this service and ``depend``. This service will not start before
-        the ``depend`` service is registered on cellaserv. Optionally you can
-        specify a callback ``cb`` that will be called when the dependency is
-        satisfied.
+        between this service and ``service``. This service will not start
+        before the ``service`` service is registered on cellaserv. Optionally
+        you can specify a callback ``cb`` that will be called when the service
+        dependency is satisfied.
 
         This operation may delay the start of service, because it must wait for
-        all services to be registered. When state.<service>
+        all dependencies to be registered.
 
-        The service setup() will not return until all services are registered.
+        The service _setup() will not return until all services are registered.
         """
 
-        def class_builder(cls):
-            # 'cls' is being created so the first time require() is called we
-            # must create this field
-            if not hasattr(cls, '_service_dependencies'):
-                cls._service_dependencies = defaultdict(list)
+        depend = (service, identification)
 
+        def class_builder(cls):
             if cb:
                 cls._service_dependencies[depend].append(cb)
             else:
@@ -530,7 +531,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
             logger.debug("Calling %s/%s.%s(%s)...",
                          self.service_name, self.identification, method, data)
             # We use the desciptor's __get__ because we don't know if the
-            # callback should be bound to this instance
+            # callback should be bound to this instance.
             reply_data = callback.__get__(self, type(self))(**data)
             logger.debug("Called  %s/%s.%s(%s) = %s",
                          self.service_name, self.identification, method, data,
@@ -725,7 +726,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
         # When the service 'config' is available, request base values for
         # ConfigVariables, using syn_client
         for variable in self._config_variables:
-            self._service_dependencies['config'].append(
+            self._service_dependencies[('config', '')].append(
                 _on_config_registered_wrap(variable))
 
         self._setup_dependencies(syn_client)
@@ -733,11 +734,6 @@ class Service(AsynClient, metaclass=ServiceMeta):
     def _setup_dependencies(self, syn_client):
         """
         Wait for all dependencies, synchronously.
-
-        TODO
-        ----
-
-        - Add dependency to a service with a specific identification.
 
         Implementation
         --------------
@@ -747,11 +743,12 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
         When the service _setup() method is called a SynClient is used to:
 
-        - for each dependency 'S', subscribe to 'new-service.S'
+        - subscribe to 'log.cellaserv.new-service' to get notified of new
+          services.
         - request the service 'cellaserv' for the list of currently connected
           services, using the 'list-services' method. Dependencies already
           registered are removed from the list of waited depencies
-        - wait for publish messages 'new-service.<service>' for each
+        - wait for publish messages 'log.cellaserv.new-service' for each
           dependency.
         - when all services are registered, call callbacks
         """
@@ -760,53 +757,46 @@ class Service(AsynClient, metaclass=ServiceMeta):
             # No dependencies, return early
             return
 
-        # The set of services we are waiting.
-        services_unregistered = set()
-        for service in self._service_dependencies.keys():
-            name_ident = service.split('.', 1)
-            if len(name_ident) == 2:
-                services_unregistered.add(tuple(name_ident))
-            else:
-                services_unregistered.add(tuple([name_ident[0], '']))
+        # We use a set for easier removal
+        services_unregistered = set(self._service_dependencies.keys())
 
-            # First register for new services, so that we don't miss a service
-            # if it registers just after the 'list-services' call.
-            for service in self._service_dependencies:
-                syn_client.subscribe('log.cellaserv.new-service.' +
-                                     name_ident[0])
+        # First register for new services, so that we don't miss a service
+        # if it registers just after the 'list-services' call.
+        syn_client.subscribe('log.cellaserv.new-service')
 
         # Get the list of already registered service.
         data = syn_client.request('list-services', 'cellaserv')
-        # Go JSON's implementation sends null for the empty slice
+        # Go JSON's implementation sends "null" for the empty slice (when there
+        # is no service connected to cellaserv).
         services_registered = self._decode_data(data) or []
+
         for service in services_registered:
             service_ident = (service['Name'], service['Identification'])
-            if service_ident in services_unregistered:
+            try:
                 services_unregistered.remove(service_ident)
+            except KeyError:
+                pass  # We were not waiting for this service.
 
-        # Wait for all service to have registered
+        # Wait for all service to have registered.
         while services_unregistered:
             logger.info("[Dependencies] Waiting for %s",
                         services_unregistered)
             msg = syn_client.read_message()
             if msg.type == Message.Publish:
                 # We are waiting for a pubish or form:
-                # 'new-service.<service>'
+                # 'log.cellaserv.new-service'
                 # It is sent automatically by cellaserv when a new service is
                 # registered
                 pub = Publish()
                 pub.ParseFromString(msg.content)
-                if pub.event.startswith('log.cellaserv.new-service.'):
+                if pub.event == 'log.cellaserv.new-service':
                     data = json.loads(pub.data.decode())
                     name_ident = (data['Name'], data['Identification'])
                     try:
                         services_unregistered.remove(name_ident)
                         logger.info("[Dependencies] Waited for %s", name_ident)
                     except KeyError:
-                        logger.error("Received a 'new-service' event for "
-                                     "the wrong service: %s",
-                                     MessageToString(msg))
-                        continue
+                        pass  # It was not a service we were waiting for.
                 else:
                     logger.error("Dropping non 'new-service' publish: %s",
                                  MessageToString(pub))
@@ -814,6 +804,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
                 logger.error("Dropping unknown message: %s",
                              MessageToString(msg))
 
+        # We have waited for all the dependencies to register.
         for callbacks in self._service_dependencies.values():
             for callback in callbacks:
                 callback()
@@ -837,7 +828,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
                     kwargs = {}
                 logger.debug("Publish callback: %s(%s)", fun.__name__, kwargs)
                 try:
-                    fun(self, **kwargs)
+                    fun(**kwargs)
                 except TypeError:
                     log_msg_fmt = "Bad publish data for function {0}: {1}"
                     log_msg = log_msg_fmt.format(fun.__name__, kwargs)
