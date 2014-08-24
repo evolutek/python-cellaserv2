@@ -4,6 +4,7 @@ import time
 
 from cellaserv.service import Service
 
+
 class Date(Service):
 
     @Service.action
@@ -17,6 +18,12 @@ class Date(Service):
     @Service.event("hello")
     def say(self, what="world"):
         print("hello", what)
+
+    @Service.thread
+    def loop(self):
+        while not time.sleep(3):
+            self.log(time=time.time())
+
 
 def main():
     date_service = Date()

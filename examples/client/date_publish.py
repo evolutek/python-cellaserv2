@@ -4,12 +4,9 @@
 import time
 
 from cellaserv.client import SynClient
-from cellaserv.settings import get_socket
+
 
 class DatePublisher(SynClient):
-    def __init__(self, sock):
-        super().__init__(sock=sock)
-
     def broadcast_time(self):
         self.publish('time', str(time.time()).encode())
 
@@ -17,10 +14,10 @@ class DatePublisher(SynClient):
         while not time.sleep(1):
             self.broadcast_time()
 
+
 def main():
-    with get_socket() as sock:
-        date = DatePublisher(sock)
-        date.run()
+    date = DatePublisher()
+    date.run()
 
 if __name__ == '__main__':
     main()
