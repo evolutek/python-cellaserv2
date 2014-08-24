@@ -154,7 +154,7 @@ class AbstractClient:
 
         self.send_message(message)
 
-    def request(self, method, service, identification=None, data=None):
+    def request(self, method, service, *, identification=None, data=None):
         """
         Send a ``request`` message.
 
