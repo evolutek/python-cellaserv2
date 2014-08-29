@@ -579,43 +579,37 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     help._actions = ['help']
 
-    def help_actions(self) -> dict:
-        """List available actions for this service."""
+    def _get_help(self, methods) -> dict:
+        """
+        Helper function that create a dict with the signature and the
+        documentation of a mapping of methods.
+        """
         docs = {}
-        for action_name, unbound_f in self._actions.items():
-            # The name of the method can be != action_action
-            f_name = unbound_f.__name__
+        for name, unbound_f in methods.items():
             # Get the function from self to get a bound method in order to
             # remove the first parameter (class name).
-            bound_f = getattr(self, f_name)
+            bound_f = unbound_f.__get__(self, type(self))
             doc = inspect.getdoc(bound_f)
 
             # Get signature of this method, ie. how the use must call it
             if sys.version_info.minor < 3:
-                sig = action_name + \
-                      inspect.formatargspec(*inspect.getfullargspec(bound_f))
+                sig = (name +
+                       inspect.formatargspec(*inspect.getfullargspec(bound_f)))
             else:
-                sig = action_name + str(inspect.signature(bound_f))
+                sig = name + str(inspect.signature(bound_f))
 
-            docs[action_name] = {'doc': doc, 'sig': sig}
+            docs[name] = {'doc': doc, 'sig': sig}
         return docs
+
+    def help_actions(self) -> dict:
+        """List available actions for this service."""
+        return self._get_help(self._actions)
 
     help_actions._actions = ['help_actions']
 
     def help_events(self) -> dict:
         """List subscribed events of this service."""
-        doc = {}
-        for event, f in self._events.items():
-            bound_f = getattr(self, f.__name__)
-
-            if sys.version_info.minor < 3:
-                doc[event] = inspect.formatargspec(
-                        *inspect.getfullargspec(bound_f))
-            else:
-                doc[event] = (inspect.getdoc(bound_f)
-                              or str(inspect.signature(bound_f)))
-
-        return doc
+        return self._get_help(self._events)
 
     help_events._actions = ['help_events']
 
