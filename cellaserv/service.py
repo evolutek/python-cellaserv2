@@ -632,7 +632,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     # Convenience methods
 
-    def publish(self, event, **kwargs):
+    def publish(self, event, *args, **kwargs):
         """
         Send a publish message.
 
@@ -640,7 +640,24 @@ class Service(AsynClient, metaclass=ServiceMeta):
         :param **kwargs: Data sent along the publish message, will be encoded
                          in json.
         """
-        super().publish(event, data=json.dumps(kwargs).encode())
+
+        if args and kwargs:
+            logging.error("Cannot publish with both args and kwargs")
+            traceback.print_stack()
+            kwargs['args'] = repr(args)
+            pub_data = kwargs
+        elif args:
+            pub_data = args
+        else:
+            pub_data = kwargs
+
+        try:
+            data = json.dumps(pub_data)
+        except:
+            logging.error("Could not serialize publish data: %s", pub_data)
+            data = repr(pub_data)
+
+        super().publish(event, data=data.encode())
 
     def log(self, *args, what=None, **log_data):
         """
