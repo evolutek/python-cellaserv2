@@ -60,15 +60,6 @@ class ActionProxy:
             ret = None
         return ret
 
-    # IPython stuff
-
-    def getdoc(self):
-        raw_data = self.client.request('help_action',
-                                       service=self.service,
-                                       data=json.dumps(
-                                           {'action': self.action}))
-        return raw_data.decode("utf8")
-
 
 class ServiceProxy:
     """Service proxy for cellaserv."""
@@ -89,12 +80,6 @@ class ServiceProxy:
     def __getitem__(self, identification):
         self.identification = identification
         return self
-
-    # IPython
-
-    def getdoc(self):
-        raw_data = self.client.request('help', service=self.service_name)
-        return raw_data.decode("utf8")
 
 
 class CellaservProxy():
@@ -128,4 +113,4 @@ class CellaservProxy():
         :param kwargs dict: Optional data sent with the event.
         """
         self.client.publish(event=event,
-                            data=json.dumps(kwargs).encode("utf8"))
+                            data=json.dumps(kwargs).encode())
