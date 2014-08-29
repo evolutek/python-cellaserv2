@@ -530,9 +530,22 @@ class Service(AsynClient, metaclass=ServiceMeta):
         try:
             logger.debug("Calling %s/%s.%s(%s)...",
                          self.service_name, self.identification, method, data)
+
+            # Guess type of arguments passing
+            if type(data) is list:
+                args = data
+                kwargs = {}
+            elif type(data) is dict:
+                args = []
+                kwargs = data
+            else:
+                args = [data]
+                kwargs = {}
+
             # We use the desciptor's __get__ because we don't know if the
             # callback should be bound to this instance.
-            reply_data = callback.__get__(self, type(self))(**data)
+            bound_cb = callback.__get__
+            reply_data = bound_cb(self, type(self))(*args, **kwargs)
             logger.debug("Called  %s/%s.%s(%s) = %s",
                          self.service_name, self.identification, method, data,
                          reply_data)

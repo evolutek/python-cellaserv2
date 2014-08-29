@@ -15,10 +15,18 @@ Example usage::
 """
 
 import json
+import logging
 import socket
+import traceback
 
 import cellaserv.client
 import cellaserv.settings
+from cellaserv.settings import DEBUG
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if DEBUG >= 2
+                else logging.INFO if DEBUG == 1
+                else logging.WARNING)
 
 
 class ActionProxy:
@@ -30,8 +38,18 @@ class ActionProxy:
         self.identification = identification
         self.client = client
 
-    def __call__(self, **data):
-        req_data = json.dumps(data).encode("utf8") if data else None
+    def __call__(self, *args, **kwargs):
+        if args and kwargs:
+            logger.error(
+                "[Proxy] Cannot send a request with both args and kwargs")
+            str_stack = ''.join(traceback.format_stack())
+            self.client.publish(
+                event='log.coding-error',
+                data=str_stack.encode())
+            return None
+
+        data = args or kwargs
+        req_data = json.dumps(data).encode() if data else None
         raw_data = self.client.request(self.action,
                                        service=self.service,
                                        identification=self.identification,
