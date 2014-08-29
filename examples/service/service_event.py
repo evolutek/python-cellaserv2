@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# encoding: utf-8
 
-"""Asynchronous variable setting.
+"""Asynchronous event setting.
 
 .. warning::
 
@@ -28,23 +27,18 @@ Will display::
 """
 
 from time import sleep
-from threading import Thread
 
-from cellaserv.service import Service, Variable
+from cellaserv.service import Service, Event
+
 
 class Foo(Service):
 
-    def __init__(self):
-        super().__init__()
-
-        self.t = Thread(target=self.thread_loop)
-        self.t.start()
-
-    some_event = Variable() # set event is 'some_event'
-    variable = Variable(set='my-set', clear='my-clear')
+    some_event = Event()  # set event is 'some_event'
+    event = Event(set='my-set', clear='my-clear')
 
     # Threads
 
+    @Service.thread
     def thread_loop(self):
         while not sleep(1):
             # Do someting
@@ -53,10 +47,11 @@ class Foo(Service):
             print("self.some_event = {}".format(self.some_event.is_set()))
 
             # Check variable state
-            if self.variable.is_set():
-                print("Set! self.variable.data = {}".format(self.variable.data))
+            if self.event.is_set():
+                print("Set! self.event.data = {}".format(self.event.data))
             else:
-                print("Unset... self.variable.data = {}".format(self.variable.data))
+                print("Unset. self.event.data = {}".format(self.event.data))
+
 
 def main():
     foo = Foo()

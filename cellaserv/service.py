@@ -139,45 +139,38 @@ def _request_to_string(req):
 # Keeping the script compatible between python 3.1 and above
 Event = None
 if sys.version_info[1] < 2:
-    Event = threading._Event
+    ThreadingEvent = threading._Event
 else:
-    Event = threading.Event
+    ThreadingEvent = threading.Event
 
 if 'callable' not in dir(__builtins__):
     def callable(f):
         return hasattr(f, '__call__')
 
 
-class Variable(Event):
+class Event(ThreadingEvent):
     """
-    Variables help you share data and states between services.
+    Events help you share states between services.
 
-    The value of the variable can be set by cellaserv publish messages. When a
-    service publishs the event associated with this variable, the underlying
-    threding.Event will be set() and any thread wait()ing for it will we
+    Events can also contain data, set by cellaserv publish messages. When a
+    service publishs the event associated with this Event, the underlying
+    threading.Event will be set() and any thread wait()ing for it will we
     awaken.
 
-    The events associated with this Variable can be set in the constructor, but
-    must be subscribed by another client, eg. a Service subclass.
-
-    This is believed to be thread-safe. That is mutliple threads can wait()
-    this varible and each of then will be woken up when the variable is set().
+    Events are thread-safe. That is mutliple threads can wait() this varible
+    and each of then will be woken up when the variable is set().
 
     Example::
 
-        >>> from cellaserv.service import Service, Variable
+        >>> from cellaserv.service import Service, Event
         >>> class Timer(Service):
-        ...     t = Variable()
+        ...     t = Event()
         ...     ...
-
-    TODO: Rename this class to Event, because that is what it really is. Plus
-    we now have ConfigVariable that are better implementation of the "variable"
-    concept.
     """
 
     def __init__(self, set=None, clear=None):
         """
-        Define a new cellaserv Variable.
+        Define a new cellaserv Event.
 
         :param set str: Event that sets the variable
         :param clear str: Event that clears the variable
@@ -185,17 +178,16 @@ class Variable(Event):
         super().__init__()
 
         self.name = "?"  # set by Service to the name of the declared field
-        # Optional data held by the variable
+        # Optional data held by the event
         self.data = {}
 
-        # Events that set/clear the variable, if they are different from the
-        # name
+        # Events that set/clear the event, if they are different from the name
         self._event_set = set
         self._event_clear = clear
 
     def __call__(self):
         """
-        Returns the current value of the variable.
+        Returns the current value of the event.
 
         Handy syntactic sugar.
         """
@@ -293,20 +285,20 @@ class ServiceMeta(type):
         Basic level of metaprogramming magic.
         """
 
-        def _var_wrap_set(variable):
-            def _variable_set(self, **kwargs):
-                logger.debug("Variable %s set, data=%s", variable.name, kwargs)
-                variable.set()
-                variable.data = kwargs
-            return _variable_set
+        def _event_wrap_set(event):
+            def _event_set(self, **kwargs):
+                logger.debug("Event %s set, data=%s", event.name, kwargs)
+                event.data = kwargs
+                event.set()
+            return _event_set
 
-        def _var_wrap_clear(variable):
-            def _variable_clear(self, **kwargs):
-                logger.debug("Variable %s cleared, data=%s", variable.name,
+        def _event_wrap_clear(event):
+            def _event_clear(self, **kwargs):
+                logger.debug("Event %s cleared, data=%s", event.name,
                              kwargs)
-                variable.clear()
-                variable.data = kwargs
-            return _variable_clear
+                event.data = kwargs
+                event.clear()
+            return _event_clear
 
         def _config_var_wrap_event(variable):
             def _variable_update(self, value):
@@ -336,12 +328,12 @@ class ServiceMeta(type):
                 _events[event_name] = _config_var_wrap_event(member)
                 _config_variables.append(member)
 
-            elif isinstance(member, Variable):
+            elif isinstance(member, Event):
                 member.name = name
                 event_set = member._event_set or name
                 event_clear = member._event_clear or name + "_clear"
-                _events[event_set] = _var_wrap_set(member)
-                _events[event_clear] = _var_wrap_clear(member)
+                _events[event_set] = _event_wrap_set(member)
+                _events[event_clear] = _event_wrap_clear(member)
 
         cls._actions = _actions
         cls._config_variables = _config_variables
