@@ -494,6 +494,8 @@ class Service(AsynClient, metaclass=ServiceMeta):
             sock = cellaserv.settings.get_socket()
         self._socket = sock
 
+        self._setup()
+
     # Override methods of cellaserv.client.AsynClient
 
     def on_request(self, req):
@@ -869,10 +871,8 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     def run(self):
         """
-        One-shot method to setup and start the service at the same time. This
-        is the method you will use 90% of the time to start your service.
+        Sugar for starting the service.
         """
-        self._setup()
         Service.loop()
 
     @staticmethod
