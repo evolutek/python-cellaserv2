@@ -543,8 +543,8 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
             # We use the desciptor's __get__ because we don't know if the
             # callback should be bound to this instance.
-            bound_cb = callback.__get__
-            reply_data = bound_cb(self, type(self))(*args, **kwargs)
+            bound_cb = callback.__get__(self, type(self))
+            reply_data = bound_cb(*args, **kwargs)
             logger.debug("Called  %s/%s.%s(%s) = %s",
                          self.service_name, self.identification, method, data,
                          reply_data)
