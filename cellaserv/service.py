@@ -482,6 +482,11 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     def __init__(self, identification=None, sock=None):
         self._reply_cb = {}
+
+        if not self.service_name:
+            # service name is class name in lower case
+            self.service_name = self.__class__.__name__.lower()
+
         self.identification = identification or self.identification
 
         if not sock:
@@ -688,10 +693,6 @@ class Service(AsynClient, metaclass=ServiceMeta):
         Use this if you want to setup multiple service before running
         ``Service.loop()``.
         """
-
-        if not self.service_name:
-            # service name is class name in lower case
-            self.service_name = self.__class__.__name__.lower()
 
         self._setup_synchronous()
         self._setup_asynchronous()
