@@ -556,7 +556,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
             logger.error("Exception during %s", _request_to_string(req),
                          exc_info=True)
             self.reply_error_to(req, cellaserv.client.Reply.Error.Custom,
-                                json.dumps(str(e)))
+                                str(e))
             return
 
         self.reply_to(req, reply_data)
@@ -588,7 +588,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
             # Get the function from self to get a bound method in order to
             # remove the first parameter (class name).
             bound_f = unbound_f.__get__(self, type(self))
-            doc = inspect.getdoc(bound_f)
+            doc = inspect.getdoc(bound_f) or ""
 
             # Get signature of this method, ie. how the use must call it
             if sys.version_info.minor < 3:
