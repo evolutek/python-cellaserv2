@@ -844,12 +844,13 @@ class Service(AsynClient, metaclass=ServiceMeta):
                 else:
                     kwargs = {}
                 logger.debug("Publish callback: %s(%s)", fun.__name__, kwargs)
+
                 try:
                     fun(**kwargs)
-                except TypeError:
-                    log_msg_fmt = "Bad publish data for function {0}: {1}"
-                    log_msg = log_msg_fmt.format(fun.__name__, kwargs)
-                    self.log(msg=log_msg)
+                except:
+                    str_stack = ''.join(traceback.format_exc()).encode()
+                    super(Service, self).publish(event='log.coding-error',
+                                                 data=str_stack)
             return _wrap
 
         super().__init__(self._socket)
