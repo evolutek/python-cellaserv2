@@ -357,7 +357,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
     @staticmethod
     def _decode_msg_data(msg):
-        """Return the data contained in a message."""
+        """Returns the data contained in a message."""
         if msg.HasField('data'):
             return Service._decode_data(msg.data)
         else:
