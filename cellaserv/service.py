@@ -785,9 +785,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
         # Get the list of already registered service.
         data = syn_client.request('list-services', 'cellaserv')
-        # Go JSON's implementation sends "null" for the empty slice (when there
-        # is no service connected to cellaserv).
-        services_registered = self._decode_data(data) or []
+        services_registered = self._decode_data(data)
 
         for service in services_registered:
             service_ident = (service['Name'], service['Identification'])
