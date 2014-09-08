@@ -32,4 +32,7 @@ Installing ``python-cellaserv2``::
 Authors
 -------
 
-- Rémi Audebert, Evolutek 2013-2015
+- Rémi Audebert, Evolutek 2012-2015
+- Benoît Reitz, Evolutek 2013-2015
+- Adrien Schildknecht, Evolutek 2013-2015
+- Vincent Gatine, Evolutek 2014-2015
