@@ -44,8 +44,8 @@ Starting more than one service
 
 It is sometime preferable to start multiple services at the same time, for
 example the same service but with different identifications. In this case you
-will instanciate multiple services, call _setup() on each of this services and
-then give control to the async loop with Service.loop().
+will instanciate multiple services, then give control to the async loop with
+Service.loop().
 
 Example usage:
 
@@ -59,9 +59,6 @@ Example usage:
     ...         print(self.identification)
     ...
     >>> services = [Bar(i) for i in range(10)]
-    >>> for s in services:
-    ...    s._setup()
-    ...
     >>> Service.loop()
 
 Dependencies
@@ -79,8 +76,8 @@ You can specify that your service depends on another service using the
     ... class WithDep2(Service):
     ...     pass
 
-When the service ``_setup()`` is run, it will wait for all the dependencies to
-be registered on cellaserv.
+When the service is instanciated, it will wait for all the dependencies to be
+registered on cellaserv.
 
 Threads
 -------
@@ -388,8 +385,6 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
         This operation may delay the start of service, because it must wait for
         all dependencies to be registered.
-
-        The service _setup() will not return until all services are registered.
         """
 
         depend = (service, identification)
@@ -691,9 +686,6 @@ class Service(AsynClient, metaclass=ServiceMeta):
         """
         _setup() will use the socket connected to cellaserv to initialize the
         service.
-
-        Use this if you want to setup multiple service before running
-        ``Service.loop()``.
         """
 
         self._setup_synchronous()
