@@ -82,7 +82,7 @@ class ServiceProxy:
         return self
 
 
-class CellaservProxy():
+class CellaservProxy:
     """Proxy class for cellaserv."""
 
     def __init__(self, client=None, host=None, port=None):
