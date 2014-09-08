@@ -648,10 +648,11 @@ class Service(AsynClient, metaclass=ServiceMeta):
         try:
             data = json.dumps(pub_data)
         except:
+            self.log_exc()
             logging.error("Could not serialize publish data: %s", pub_data)
             data = repr(pub_data)
 
-        super().publish(event, data=data.encode())
+        super().publish(event=event, data=data.encode())
 
     def log(self, *args, what=None, **log_data):
         """
@@ -679,6 +680,12 @@ class Service(AsynClient, metaclass=ServiceMeta):
 
         # Publish log message to cellaserv
         self.publish(event=log_name, **log_data)
+
+    def log_exc(self):
+        """Log the current exception."""
+
+        str_stack = ''.join(traceback.format_exc())
+        super().publish(event='log.coding-error', data=str_stack.encode())
 
     # Main setup of the service
 
@@ -840,9 +847,8 @@ class Service(AsynClient, metaclass=ServiceMeta):
                 try:
                     fun(**kwargs)
                 except:
-                    str_stack = ''.join(traceback.format_exc()).encode()
-                    super(Service, self).publish(event='log.coding-error',
-                                                 data=str_stack)
+                    self.log_exc()
+
             return _wrap
 
         super().__init__(self._socket)
