@@ -2,12 +2,12 @@
 pkgname=python-cellaserv2
 pkgver=
 pkgrel=1
-pkgdesc="cellaserv2 client for python"
+pkgdesc="cellaserv2 client for python3"
 arch=('any')
 url="http://code.evolutek.org/python-cellaserv2"
 license=('beerware')
 groups=()
-depends=('python3' 'python-protobuf')
+depends=('python3' 'python-protobuf' 'python-setuptools')
 conflicts=('python-cellaserv')
 provides=('python-cellaserv')
 options=(!emptydirs)
