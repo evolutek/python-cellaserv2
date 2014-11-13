@@ -8,6 +8,7 @@ url="http://code.evolutek.org/python-cellaserv2"
 license=('beerware')
 groups=()
 depends=('python3' 'python-protobuf' 'python-setuptools')
+makedepends=('git')
 conflicts=('python-cellaserv')
 provides=('python-cellaserv')
 options=(!emptydirs)
