@@ -642,19 +642,21 @@ class Service(AsynClient, metaclass=ServiceMeta):
             pub_data = kwargs
         elif args:
             pub_data = args
-        elif kwargs:
-            pub_data = kwargs
         else:
-            pub_data = None
+            pub_data = kwargs
 
-        try:
-            data = json.dumps(pub_data)
-        except:
-            self.log_exc()
-            logging.error("Could not serialize publish data: %s", pub_data)
-            data = repr(pub_data)
+        if pub_data:
+            try:
+                data = json.dumps(pub_data)
+            except:
+                self.log_exc()
+                logging.error("Could not serialize publish data: %s", pub_data)
+                data = repr(pub_data)
+            data = data.encode()
+        else:
+            data = None
 
-        super().publish(event=event, data=data.encode())
+        super().publish(event=event, data=data)
 
     def log(self, *args, what=None, **log_data):
         """
