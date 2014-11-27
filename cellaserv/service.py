@@ -642,8 +642,10 @@ class Service(AsynClient, metaclass=ServiceMeta):
             pub_data = kwargs
         elif args:
             pub_data = args
-        else:
+        elif kwargs:
             pub_data = kwargs
+        else:
+            pub_data = None
 
         try:
             data = json.dumps(pub_data)
