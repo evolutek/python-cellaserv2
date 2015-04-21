@@ -716,7 +716,7 @@ class Service(AsynClient, metaclass=ServiceMeta):
         """
 
         # Reuse our socket to create a synchronous client
-        syn_client = SynClient(self._socket)
+        syn_client = SynClient()
 
         # Setup for ConfigVariable, get base value using the synchronous client
         def _on_config_registered_wrap(variable):
