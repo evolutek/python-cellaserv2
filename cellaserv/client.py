@@ -13,6 +13,7 @@ import logging
 import random
 import struct
 import threading
+from collections import deque
 
 from collections import defaultdict
 
@@ -230,12 +231,16 @@ class SynClient(AbstractClient):
         super().__init__()
 
         self._socket = sock or get_socket()
+        self.missed_msg = deque()
 
     def _send_message(self, msg):
         self._socket.send(struct.pack("!I", len(msg)) + msg)
 
-    def read_message(self):
-        """Read a message from the socket."""
+    def read_message(self, reply=False):
+        """Read a message from the socket or the missed message queue."""
+        # Check if missed message queue is empty
+        if len(self.missed_msg) > 0 and reply == False:
+            return self.missed_msg.pop()
         # Receive message header
         hdr = self._socket.recv(4)
         # Header is the size of the message as a uint32 in network byte order
@@ -262,19 +267,20 @@ class SynClient(AbstractClient):
 
         Send the ``request`` message, then wait for the reply.
         """
+
         # Send the request
         req_id = super().request(method=method, service=service,
                                  identification=identification, data=data)
 
         # Wait for response
         while True:
-            message = self.read_message()
+            message = self.read_message(reply=True)
 
             if message.type != Message.Reply:
                 # Currentyle Dropping non-reply is not an issue as the
                 # SynClient is only used to send queries
-                logger.warning("[Request] Dropping non Reply: "
-                               + MessageToString(message).decode())
+                logger.debug("[Request] Non Reply message queued for future use")
+                self.missed_msg.append(message)
                 continue
 
             # Parse reply
